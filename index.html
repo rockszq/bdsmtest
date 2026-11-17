@@ -1,0 +1,3493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="D/s 与 S/M 双主轴倾向自评问卷，48 题">
+    <title>倾向自评问卷</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+        :root {
+            /* 纸与墨 —— 编辑杂志风的基底 */
+            --paper:        #f7f5f0;
+            --paper-raised: #fdfcfa;
+            --paper-sunken: #efebe4;
+            --ink:          #1a1814;
+            --ink-soft:     #5a5449;
+            --ink-faint:    #8e8677;
+            --ink-ghost:    #b5ad9d;
+            --rule:         #ddd7cb;
+            --rule-soft:    #e8e3d9;
+
+            /* 主色：深赭红，取自旧版洋红但降饱和、压明度 */
+            --accent:       #8c3a2f;
+            --accent-hover: #743025;
+            --accent-tint:  rgba(140, 58, 47, 0.06);
+            --accent-line:  rgba(140, 58, 47, 0.28);
+
+            /* 六维：低饱和土色系 */
+            --d-color:  #8a5a2b;
+            --sub-color:#4a6274;
+            --s-color:  #9c3d34;
+            --m-color:  #5c6b52;
+            --sw-color: #6b5b7d;
+            --br-color: #96702a;
+
+            /* 运行时由 renderScoreCards 按维度覆盖（JS setProperty） */
+            --dim-color: currentColor;
+
+            --serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'Source Han Serif SC', Georgia, serif;
+            --sans:  'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+            --measure: 34em;   /* 正文最佳行宽 */
+            --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* 链接：不定义颜色就是浏览器默认蓝 —— 这是上一版漏掉蓝色链接的根因 */
+        a {
+            color: var(--ink-soft);
+            text-decoration: none;
+            transition: color 0.2s var(--ease);
+        }
+        a:hover { color: var(--accent); }
+        a:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            min-height: 100vh;
+            font-family: var(--sans);
+            font-weight: 400;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.75;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 纸张纹理：极淡的斜向织理，避免纯色底的塑料感 */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(26, 24, 20, 0.012) 0px,
+                rgba(26, 24, 20, 0.012) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+        }
+
+        #app {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 72px 28px 96px;
+        }
+
+        .scene { display: none; }
+        .scene.active { display: block; animation: fadeUp 0.5s var(--ease) both; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---------- 类型概括（结果页第一印象） ---------- */
+        .type-profile {
+            text-align: center;
+            padding: 6px 0 24px;
+            margin-bottom: 8px;
+        }
+        .type-profile-label {
+            font-family: var(--serif);
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--ink);
+            line-height: 1.3;
+        }
+        .type-profile-en {
+            font-family: var(--serif);
+            font-size: 0.68rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-top: 6px;
+        }
+        .type-profile-desc {
+            font-size: 0.875rem;
+            color: var(--ink-soft);
+            line-height: 1.8;
+            max-width: 32em;
+            margin: 14px auto 0;
+        }
+
+        /* ---------- 维度定义行 ---------- */
+        .dim-def {
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+            line-height: 1.7;
+            margin-top: 4px;
+        }
+
+        /* ---------- 年龄确认与关于框 ---------- */
+        .gate-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 18px;
+            font-size: 0.82rem;
+            color: var(--ink-soft);
+        }
+        .gate-row input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            transform: translateY(1px);
+        }
+
+        details.about-box {
+            margin-top: 40px;
+            border-top: 1px solid var(--rule-soft);
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+        }
+        details.about-box summary {
+            cursor: pointer;
+            padding: 16px 0;
+            text-align: center;
+            letter-spacing: 0.12em;
+            color: var(--ink-faint);
+            list-style: none;
+            transition: color 0.2s var(--ease);
+        }
+        details.about-box summary::-webkit-details-marker { display: none; }
+        details.about-box summary:hover { color: var(--ink); }
+        details.about-box[open] summary { color: var(--ink); }
+        details.about-box .about-body {
+            padding: 0 4px 20px;
+            line-height: 1.85;
+            text-align: left;
+        }
+        details.about-box .about-body p { margin-bottom: 10px; }
+
+        /* ---------- 报头 ---------- */
+        .header {
+            text-align: center;
+            margin-bottom: 52px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        h1 {
+            font-family: var(--serif);
+            font-size: 2.1rem;
+            font-weight: 600;
+            line-height: 1.35;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+            margin-bottom: 14px;
+        }
+
+        h2 {
+            font-family: var(--serif);
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            font-family: var(--serif);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--ink);
+            letter-spacing: 0.02em;
+        }
+
+        .subtitle {
+            color: var(--ink-faint);
+            font-size: 0.8rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        /* 章节编号：编辑感的来源 */
+        .eyebrow {
+            font-family: var(--serif);
+            font-size: 0.7rem;
+            letter-spacing: 0.32em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 18px;
+            display: block;
+        }
+
+        /* ---------- 按钮 ---------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 108px;
+            padding: 12px 28px;
+            border: 1px solid var(--ink);
+            border-radius: 0;
+            background: transparent;
+            color: var(--ink);
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .btn:hover { background: var(--ink); color: var(--paper); }
+
+        .btn:active { transform: translateY(1px); }
+
+        .btn:disabled { opacity: 0.28; cursor: not-allowed; }
+        .btn:disabled:hover { background: transparent; color: var(--ink); }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            color: #fff;
+        }
+
+        .btn-secondary { border-color: var(--rule); color: var(--ink-soft); }
+        .btn-secondary:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+        .btn-success { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .btn-success:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+        /* ---------- 导语 ---------- */
+        .welcome-content {
+            max-width: var(--measure);
+            margin: 0 auto 36px;
+            text-align: center;
+        }
+
+        .welcome-content p {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            line-height: 1.9;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 28px auto;
+            max-width: var(--measure);
+            border-top: 1px solid var(--rule-soft);
+        }
+
+        .feature-list li {
+            position: relative;
+            padding: 13px 0 13px 30px;
+            color: var(--ink-soft);
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--rule-soft);
+            line-height: 1.7;
+        }
+
+        .feature-list li::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 22px;
+            width: 10px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        /* ---------- 进度 ---------- */
+        .progress-info {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 14px;
+            margin-bottom: 18px;
+            font-family: var(--serif);
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+            letter-spacing: 0.1em;
+        }
+
+        .progress-info .counter {
+            font-size: 1.05rem;
+            color: var(--ink);
+            letter-spacing: 0.04em;
+        }
+        .progress-info .counter em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .progress-bar-container { margin: 0 auto 40px; max-width: 320px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 1px;
+            background: var(--rule);
+            overflow: visible;
+        }
+
+        .progress-fill {
+            height: 1px;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.45s var(--ease);
+            position: relative;
+        }
+
+        /* 端点圆点：替代粗进度条的精致做法 */
+        .progress-fill::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            top: -2px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .progress-text {
+            display: none;
+        }
+
+        /* ---------- 题目 ---------- */
+        .question-container {
+            max-width: var(--measure);
+            margin: 0 auto 32px;
+            text-align: center;
+            padding: 0;
+            background: none;
+            border: none;
+        }
+
+        .question-text {
+            font-family: var(--serif);
+            font-size: 1.22rem;
+            font-weight: 500;
+            line-height: 1.75;
+            color: var(--ink);
+            margin-bottom: 18px;
+            letter-spacing: 0.01em;
+        }
+
+        .question-clarification {
+            font-size: 0.78rem;
+            color: var(--ink-faint);
+            line-height: 1.7;
+            max-width: 30em;
+            margin: 0 auto;
+            padding: 10px 0 0;
+            border-top: 1px solid var(--rule-soft);
+            min-height: 0;
+            visibility: hidden;
+        }
+
+        .question-clarification.visible { visibility: visible; }
+
+        /* ---------- 选项：杂志问卷感 ---------- */
+        .choices-grid {
+            display: grid;
+            gap: 0;
+            margin: 0 auto 28px;
+            max-width: var(--measure);
+            border-top: 1px solid var(--rule);
+        }
+
+        .choice-btn {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            width: 100%;
+            padding: 15px 18px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--rule-soft);
+            border-radius: 0;
+            text-align: left;
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--ink-soft);
+            cursor: pointer;
+            transition: background 0.2s var(--ease), color 0.2s var(--ease), padding-left 0.25s var(--ease);
+            -webkit-appearance: none;
+            appearance: none;
+            min-height: 0;
+        }
+
+        .choice-btn:hover {
+            background: var(--paper-raised);
+            color: var(--ink);
+        }
+
+        .choice-btn.selected {
+            background: var(--accent-tint);
+            color: var(--ink);
+            box-shadow: inset 2px 0 0 var(--accent);
+        }
+
+        /* 序号：衬线小字 + 细分隔线，而非圆形徽章 */
+        .choice-btn .number {
+            font-family: var(--serif);
+            font-size: 0.75rem;
+            color: var(--ink-ghost);
+            flex-shrink: 0;
+            width: 1.6em;
+            position: relative;
+            letter-spacing: 0.04em;
+            transition: color 0.2s var(--ease);
+        }
+
+        .choice-btn .number::after {
+            content: "";
+            position: absolute;
+            left: 1.7em;
+            top: 0.55em;
+            width: 6px;
+            height: 1px;
+            background: var(--rule);
+        }
+
+        .choice-btn.selected .number { color: var(--accent); }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 24px;
+            gap: 20px;
+        }
+
+        .nav-buttons .btn { min-width: 96px; }
+
+        .nav-buttons .hint {
+            color: var(--ink-ghost);
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* ---------- 结果 ---------- */
+        .results-container { display: grid; gap: 44px; }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--rule-soft);
+            border: 1px solid var(--rule-soft);
+        }
+
+        .score-card {
+            background: var(--paper);
+            padding: 24px 12px 20px;
+            text-align: center;
+            box-shadow: none;
+            transition: background 0.25s var(--ease);
+            position: relative;
+        }
+
+        .score-card:hover { background: var(--paper-raised); transform: none; box-shadow: none; }
+
+        .score-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 22px;
+            height: 2px;
+            background: var(--dim-color, currentColor);
+            opacity: 0.9;
+        }
+
+        .score-value {
+            font-family: var(--serif);
+            font-size: 2.4rem;
+            font-weight: 500;
+            line-height: 1.1;
+            margin: 10px 0 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 1px;
+            background: var(--rule);
+            overflow: visible;
+            margin: 12px 0 10px;
+        }
+
+        .score-fill {
+            height: 1px;
+            background: currentColor;
+            transition: width 0.6s var(--ease);
+            position: relative;
+        }
+        .score-fill::after {
+            content: "";
+            position: absolute;
+            right: -1.5px;
+            top: -1.5px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .score-label { display: inline-flex; align-items: center; gap: 6px; }
+
+        .svg-icon { width: 1.15em; height: 1.15em; vertical-align: middle; display: inline-block; }
+        .svg-icon-lg { width: 1.4em; height: 1.4em; }
+
+        .radar-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 32px 20px;
+            background: none;
+            border: none;
+            border-top: 1px solid var(--rule);
+            border-bottom: 1px solid var(--rule);
+        }
+        .radar-chart-container canvas { max-width: 100%; height: auto; }
+
+        /* ---------- 区块 ---------- */
+        .result-section {
+            background: none;
+            border: none;
+            border-top: 1px solid var(--rule);
+            padding: 28px 0 0;
+            margin: 0;
+        }
+        .result-section > h3 { margin-bottom: 20px; }
+
+        .detail-card {
+            background: none;
+            border: none;
+            border-left: none;
+            border-top: 1px solid var(--rule-soft);
+            padding: 24px 0 0;
+            margin: 0 0 28px;
+            position: relative;
+        }
+        .detail-card::before {
+            content: "";
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: currentColor;
+        }
+
+        .insight-item {
+            margin: 0 0 16px;
+            padding: 16px 0 16px 18px;
+            background: none;
+            border: none;
+            border-left: 1px solid var(--rule);
+            border-radius: 0;
+            font-size: 0.9rem;
+            line-height: 1.85;
+            color: var(--ink-soft);
+        }
+        .insight-item strong { color: var(--ink); font-weight: 500; }
+        .insight-item ul { margin: 10px 0 0; padding-left: 18px; }
+        .insight-item li { margin-bottom: 7px; }
+
+        .inconsistency-warning {
+            background: rgba(140, 58, 47, 0.035);
+            border: 1px solid var(--accent-line);
+            border-left-width: 2px;
+            padding: 18px 20px;
+            margin: 0 0 16px;
+            font-size: 0.875rem;
+        }
+        .inconsistency-warning strong { color: var(--accent); font-weight: 500; }
+
+        .test-completion-notice {
+            background: rgba(150, 112, 42, 0.06);
+            border: 1px solid rgba(150, 112, 42, 0.28);
+            border-left-width: 2px;
+            padding: 14px 18px;
+            margin: 12px 0 0;
+            font-size: 0.82rem;
+            color: var(--ink-soft);
+        }
+
+        .reliability-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid var(--rule);
+            border-radius: 0;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            margin-left: 8px;
+            font-family: var(--serif);
+        }
+
+        .dim-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid currentColor;
+            border-radius: 0;
+            font-size: 0.66rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        /* ---------- 标签页 ---------- */
+        .result-tabs { margin: 0; }
+
+        .tab-nav {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--rule);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .tab-nav::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            flex: 0 0 auto;
+            padding: 12px 18px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--ink-faint);
+            font-family: var(--sans);
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+            white-space: nowrap;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .tab-btn:hover { color: var(--ink); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-content { display: none; padding: 30px 0 0; }
+        .tab-content.active { display: block; }
+        .tab-content .detail-card { margin-top: 0; }
+
+        /* ---------- 弹层 ---------- */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 24, 20, 0.62);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 32px 20px;
+        }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+
+        .modal-content {
+            background: var(--paper-raised);
+            border: 1px solid var(--rule);
+            padding: 36px 32px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 64px rgba(26, 24, 20, 0.18);
+        }
+
+        /* ---------- Toast ---------- */
+        .toast-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 24, 20, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .toast-overlay.active { display: flex; }
+
+        .toast-box {
+            background: var(--paper-raised);
+            border: 1px solid var(--rule);
+            padding: 32px 28px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 56px rgba(26, 24, 20, 0.2);
+            animation: toastIn 0.28s var(--ease);
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast-box p { margin: 0; line-height: 1.8; font-size: 0.9rem; color: var(--ink-soft); }
+        .toast-actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+
+        .question-container.q-enter { animation: qEnter 0.35s var(--ease); }
+        @keyframes qEnter {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .question-container.unanswered-flash { animation: flashInk 0.6s var(--ease); }
+        @keyframes flashInk {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        /* ---------- 工具入口 ---------- */
+        .more-tools {
+            margin-top: 44px;
+            padding-top: 26px;
+            border-top: 1px solid var(--rule-soft);
+        }
+
+        .more-tools h3 {
+            color: var(--ink-faint);
+            margin-bottom: 18px;
+            text-align: center;
+            font-family: var(--serif);
+            font-size: 0.72rem;
+            font-weight: 400;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+
+        .tools-grid a {
+            display: block;
+            padding: 14px 12px;
+            background: transparent;
+            border: 1px solid var(--rule-soft);
+            text-decoration: none;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: 0.85rem;
+            transition: border-color 0.2s var(--ease), background 0.2s var(--ease), color 0.2s var(--ease);
+        }
+        .tools-grid a:hover { border-color: var(--accent); background: var(--paper-raised); color: var(--ink); }
+
+        /* ---------- 响应式 ---------- */
+        @media (max-width: 640px) {
+            #app { padding: 44px 20px 72px; }
+            h1 { font-size: 1.6rem; }
+            h2 { font-size: 1.25rem; }
+            .header { margin-bottom: 36px; padding-bottom: 22px; }
+            .question-text { font-size: 1.1rem; }
+            .choice-btn { padding: 13px 12px; font-size: 0.86rem; gap: 12px; }
+            .choice-btn .number { width: 1.4em; }
+            .choice-btn .number::after { left: 1.5em; }
+            .scores-grid { grid-template-columns: repeat(2, 1fr); }
+            .score-card { padding: 20px 8px 16px; }
+            .score-value { font-size: 1.9rem; }
+            .results-container { gap: 34px; }
+            .nav-buttons { flex-direction: column; gap: 14px; }
+            .nav-buttons .btn { width: 100%; }
+            .modal-content { padding: 28px 22px; }
+            .tab-btn { padding: 10px 13px; font-size: 0.74rem; }
+        }
+
+        @media (max-width: 380px) {
+            #app { padding: 36px 16px 60px; }
+            .scores-grid { grid-template-columns: 1fr; }
+            .choice-btn .number::after { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="welcomeScene" class="scene active">
+            <div class="header">
+                <span class="eyebrow">倾 向 自 评</span>
+                <h1>倾向自评问卷</h1>
+                <div class="subtitle">D/s &amp; S/M · 48 题</div>
+            </div>
+            
+            <div class="welcome-content">
+                <p>本问卷包含 48 道题，从六个维度描述你在亲密关系中的倾向。所有题目均为必答。</p>
+
+                <ul class="feature-list">
+                    <li>五个选项，题目尽量落在具体行为而非抽象概念上</li>
+                    <li>包含反向题，用于检测作答的一致性</li>
+                    <li>结果仅供自我参照，不构成任何专业评估</li>
+                </ul>
+
+                <div class="result-section" style="margin-top: 28px;">
+                    <p style="font-size: 0.82rem; color: var(--ink-faint); line-height: 1.8;">
+                        所有活动都应建立在安全、理智与知情同意（SSC）的基础上。涉及疼痛与限制的互动，
+                        请事先明确安全词、边界范围与停止机制。
+                    </p>
+                    <p style="font-size: 0.8rem; color: var(--ink-faint); line-height: 1.8; margin-top: 10px;">
+                        隐私说明：所有作答仅在本页面内计算，不采集、不上传、不存储任何数据。
+                        本问卷是自我探索工具，不构成医学或心理诊断。
+                    </p>
+                </div>
+
+                <div class="gate-row">
+                    <input type="checkbox" id="ageGate">
+                    <label for="ageGate">我已年满 18 周岁，自愿作答</label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                <button id="startBtn" class="btn btn-success" style="min-width: 160px;">开始作答</button>
+                <button id="infoBtn" class="btn btn-secondary">维度释义</button>
+            </div>
+
+            <details class="about-box">
+                <summary>关于本问卷的设计与局限</summary>
+                <div class="about-body">
+                    <p><strong>设计。</strong>48 题覆盖六个维度（支配、臣服、施虐、受虐、切换、调皮），
+                    采用五点量表，其中 6 题为反向题用于检测作答一致性；归一化后各维度独立报告 0–100 分。
+                    支配与臣服、施虐与受虐互为反向主轴，维度间不做加权合成。</p>
+                    <p><strong>定位。</strong>这是自我探索工具，不是临床评估，也未经过信效度验证
+                    （α 系数、因素结构、重测信度均未检验）。结果请结合自身经验理解，
+                    拿不准的部分与伴侣或专业人士讨论。</p>
+                    <p><strong>参考。</strong>维度划分沿用圈内通用称呼；设计与解读吸收了一个共识——清晰的沟通协商，比倾向本身更能影响实际体验的质量。</p>
+                </div>
+            </details>
+            
+            <!-- 更多测试工具 -->
+            <div class="more-tools">
+                <h3>其他问卷</h3>
+                <div class="tools-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <a href="https://trusttest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">信任测试</div>
+                    </a>
+                    <a href="https://msubtest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">偏好自评</div>
+                    </a>
+                    <a href="https://sextest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">性欲测试</div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 互动小说 -->
+            <div class="more-tools" style="margin-top: 28px;">
+                <h3>其他项目</h3>
+                <div class="tools-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <a href="https://game2.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">记忆回廊</div>
+                    </a>
+                    <a href="https://game4.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">轮回校园</div>
+                    </a>
+                    <a href="https://game5.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">支配游戏</div>
+                    </a>
+                    <a href="https://game6.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">梦蚀</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="testScene" class="scene">
+            <div class="header">
+                <h2>作答</h2>
+                <div class="progress-info">
+                    <span class="counter"><span id="currentQuestionNum">1</span> <em>/</em> <span id="totalQuestions">48</span></span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="question-container" id="questionText">
+                <div class="question-text"></div>
+                <div class="question-clarification"></div>
+            </div>
+            
+            <div class="choices-grid" id="choicesContainer"></div>
+            
+            <div class="nav-buttons">
+                <button id="prevBtn" class="btn btn-secondary" disabled>上一题</button>
+                <span class="hint">数字键 1–5 作答 · ← → 翻题<br>选择后自动进入下一题</span>
+            </div>
+        </div>
+
+        <div id="resultsScene" class="scene">
+            <div class="header">
+                <span class="eyebrow">结 果 汇 总</span>
+                <h2 id="resultTitle">你的结果</h2>
+                <div class="subtitle">48 题作答汇总</div>
+            </div>
+            
+            <div class="results-container">
+                <div class="scores-grid" id="scoresContainer"></div>
+                
+                <div class="radar-chart-container" id="radarChartContainer">
+                    <canvas id="radarCanvas" width="280" height="280"></canvas>
+                </div>
+                
+                <div class="result-section" id="coreFindings"></div>
+                
+                <div id="inconsistencyWarnings"></div>
+                
+                <div class="result-tabs">
+                    <div class="tab-nav" id="tabNav">
+                        <button class="tab-btn active" data-tab="dimensions">维度分析</button>
+                        <button class="tab-btn" data-tab="compat">关系匹配</button>
+                        <button class="tab-btn" data-tab="tips">发展建议</button>
+                        <button class="tab-btn" data-tab="safety">安全指南</button>
+                        <button class="tab-btn" data-tab="science">作答质量</button>
+                    </div>
+                    <div class="tab-content active" id="tab-dimensions">
+                        <div id="dimensionDetails"></div>
+                    </div>
+                    <div class="tab-content" id="tab-compat">
+                        <div id="compatibilityAnalysis"></div>
+                    </div>
+                    <div class="tab-content" id="tab-tips">
+                        <div id="developmentTips"></div>
+                    </div>
+                    <div class="tab-content" id="tab-safety">
+                        <div id="communicationGuide"></div>
+                    </div>
+                    <div class="tab-content" id="tab-science">
+                        <div id="testScience"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap;">
+                <button id="restartBtn" class="btn btn-primary">重新作答</button>
+                <button id="showInfoBtn" class="btn btn-secondary">维度释义</button>
+                <button id="exportBtn" class="btn btn-secondary">导出结果</button>
+            </div>
+
+            <!-- 结果页外链：与首页同构，引导继续探索 -->
+            <div class="more-tools">
+                <h3>其他问卷</h3>
+                <div class="tools-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <a href="https://trusttest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">信任测试</div>
+                    </a>
+                    <a href="https://msubtest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">偏好自评</div>
+                    </a>
+                    <a href="https://sextest.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">性欲测试</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="more-tools" style="margin-top: 28px;">
+                <h3>其他项目</h3>
+                <div class="tools-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <a href="https://game2.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">记忆回廊</div>
+                    </a>
+                    <a href="https://game4.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">轮回校园</div>
+                    </a>
+                    <a href="https://game5.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">支配游戏</div>
+                    </a>
+                    <a href="https://game6.songtears.com/" target="_blank" style="display: block; text-decoration: none;">
+                        <div style="font-size: 0.85rem;">梦蚀</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">六个维度的含义</h2>
+            
+            <div style="display: grid; gap: 20px; margin: 24px 0;">
+                <div class="result-section">
+                    <strong style="color: var(--d-color); font-family: var(--serif); letter-spacing: 0.04em;">D · 支配</strong>
+                    <p>在权力交换关系中，享受制定规则、控制场景、引导活动、承担责任并行使主导权的倾向。</p>
+                </div>
+                
+                <div class="result-section">
+                    <strong style="color: var(--sub-color); font-family: var(--serif); letter-spacing: 0.04em;">sub · 臣服</strong>
+                    <p>在权力交换关系中，享受交出控制权、服从规则、被引导、接受指令并在权力交出中找到安心与满足的倾向。</p>
+                </div>
+                
+                <div class="result-section">
+                    <strong style="color: var(--s-color); font-family: var(--serif); letter-spacing: 0.04em;">S · 施虐</strong>
+                    <p>在双方同意且安全的前提下，享受给予适度疼痛刺激、观察对方反应、控制身体感受并从这种互动中获得愉悦的倾向。</p>
+                </div>
+                
+                <div class="result-section">
+                    <strong style="color: var(--m-color); font-family: var(--serif); letter-spacing: 0.04em;">M · 受虐</strong>
+                    <p>在双方同意且安全的前提下，享受接收适度疼痛刺激、体验疼痛转化为愉悦、在身体限制和不适感中找到情感释放和满足的倾向。</p>
+                </div>
+                
+                <div class="result-section">
+                    <strong style="color: var(--sw-color); font-family: var(--serif); letter-spacing: 0.04em;">SW · 切换</strong>
+                    <p>根据伴侣类型、情境或心情，在不同关系中可能扮演主导或臣服角色，能够理解和适应不同权力动态的倾向。</p>
+                </div>
+                
+                <div class="result-section">
+                    <strong style="color: var(--br-color); font-family: var(--serif); letter-spacing: 0.04em;">BR · 调皮</strong>
+                    <p>喜欢通过调皮行为、轻度挑战规则、测试边界来互动，享受对方的回应和因此产生的张力与互动的倾向。注意：这是指自己表现出调皮行为，而非欣赏他人调皮。</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <button id="closeModalBtn" class="btn btn-primary">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ Toast 组件 -->
+    <div id="toastOverlay" class="toast-overlay">
+        <div class="toast-box">
+            <p id="toastMessage"></p>
+            <div class="toast-actions">
+                <button id="toastConfirmBtn" class="btn btn-primary">确定</button>
+                <button id="toastCancelBtn" class="btn btn-secondary" style="display:none;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+            
+            // ★ Toast 组件 - 替代 alert/confirm
+            const Toast = {
+                overlay: null,
+                messageEl: null,
+                confirmBtn: null,
+                cancelBtn: null,
+                resolveCallback: null,
+                
+                init() {
+                    this.overlay = document.getElementById('toastOverlay');
+                    this.messageEl = document.getElementById('toastMessage');
+                    this.confirmBtn = document.getElementById('toastConfirmBtn');
+                    this.cancelBtn = document.getElementById('toastCancelBtn');
+                    
+                    this.confirmBtn.addEventListener('click', () => this.close(true));
+                    this.cancelBtn.addEventListener('click', () => this.close(false));
+                },
+                
+                show(message, showCancel = false) {
+                    return new Promise(resolve => {
+                        this.resolveCallback = resolve;
+                        this.messageEl.textContent = message;
+                        this.cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
+                        this.overlay.classList.add('active');
+                    });
+                },
+                
+                close(confirmed) {
+                    this.overlay.classList.remove('active');
+                    if (this.resolveCallback) {
+                        this.resolveCallback(confirmed);
+                        this.resolveCallback = null;
+                    }
+                }
+            };
+            
+            const ATTRIBUTES = {
+                D: { name: "Dominant", color: '#8a5a2b', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l4-4 3 4 3-4 4 4v12"/><path d="M9 20v-4h6v4"/></svg>', description: '支配倾向', opposite: 'sub', fullDesc: '享受在权力交换关系中制定规则、控制场景、引导活动并行使主导权的倾向' },
+                sub: { name: "Submissive", color: '#4a6274', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v2"/><path d="M9 12l2 2 4-4"/></svg>', description: '臣服倾向', opposite: 'D', fullDesc: '享受交出控制权、服从规则、被引导并在权力交出中找到安心与满足的倾向' },
+                S: { name: "Sadist", color: '#9c3d34', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>', description: '施虐倾向', opposite: 'M', fullDesc: '在双方同意且安全的前提下，享受给予适度疼痛刺激、观察对方反应并从这种互动中获得愉悦的倾向' },
+                M: { name: "Masochist", color: '#5c6b52', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5a4.5 4.5 0 0 1 4.5 4.5M12 7.5A4.5 4.5 0 0 0 7.5 12M12 7.5V9m-4.5 3a4.5 4.5 0 0 0 4.5 4.5M7.5 12H9m7.5 0a4.5 4.5 0 0 1-4.5 4.5m4.5-4.5H15m-3 4.5V15m-4.5 0a4.5 4.5 0 0 0 4.5 4.5m0-4.5H9m6 0a4.5 4.5 0 0 1 4.5 4.5"/><circle cx="12" cy="12" r="2"/></svg>', description: '受虐倾向', opposite: 'S', fullDesc: '在双方同意且安全的前提下，享受接收适度疼痛刺激、体验疼痛转化为愉悦并找到情感释放和满足的倾向' },
+                SW: { name: "Switch", color: '#6b5b7d', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/></svg>', description: '切换倾向', opposite: null, fullDesc: '根据伴侣类型、情境或心情，在不同关系中可能扮演主导或臣服角色的倾向' },
+                BR: { name: "Brat", color: '#96702a', icon: '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', description: '调皮倾向', opposite: null, fullDesc: '喜欢通过调皮行为、轻度挑战规则、测试边界来互动，享受对方的回应和因此产生的张力与互动的倾向' }
+            };
+            
+            const CHINESE_NAMES = {
+                D: "D - Dominant 支配",
+                sub: "sub - Submissive 臣服", 
+                S: "S - Sadist 施虐", 
+                M: "M - Masochist 受虐", 
+                SW: "SW - Switch 切换", 
+                BR: "BR - Brat 调皮"
+            };
+            
+            // ============================ 优化后的题库 ============================
+            const QUESTION_BANK = [
+                // ========== D 维度：权力主导倾向（8 题）==========
+                // 保留 4 题（表面行为）+ 重写 4 题（心理深度）
+                { id: 1, text: "在亲密关系中，您是否喜欢制定规则？", measures: ['D'],
+                  clarification: "探索对制定关系规则的兴趣",
+                  choices: [
+                    { text: "完全不喜欢，规则让我不舒服", scores: { D: 0 } },
+                    { text: "不太喜欢，更愿意平等商量", scores: { D: 1 } },
+                    { text: "看情况，有时会制定", scores: { D: 2 } },
+                    { text: "比较喜欢，这让我感觉负责", scores: { D: 3 } },
+                    { text: "非常喜欢，这让我感到满足", scores: { D: 4 } }
+                ]},
+                                
+                { id: 2, text: "当需要由您拿主意并承担后果时，您是否感到不安？", measures: ['D'],
+                  clarification: "本题为反向题：选择「完全不会」代表您乐于承担责任",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，我乐于承担", scores: { D: 0 } },
+                    { text: "不太会，可以接受", scores: { D: 1 } },
+                    { text: "一般，说不好", scores: { D: 2 } },
+                    { text: "经常会，有些压力", scores: { D: 3 } },
+                    { text: "非常会，明显感到负担", scores: { D: 4 } }
+                ]},
+                                
+                { id: 3, text: "您是否享受为伴侣设定目标和规则，并监督他们完成？", measures: ['D'],
+                  clarification: "探索对设定目标和监督执行的兴趣",
+                  choices: [
+                    { text: "完全不享受，这太像工作了", scores: { D: 0 } },
+                    { text: "不太享受", scores: { D: 1 } },
+                    { text: "可以尝试", scores: { D: 2 } },
+                    { text: "比较享受，看到对方完成目标让我满足", scores: { D: 3 } },
+                    { text: "非常享受，设定目标并监督是我的重要乐趣", scores: { D: 4 } }
+                ]},
+                                
+                { id: 4, text: "在亲密互动中，您是否喜欢掌控节奏和方向？", measures: ['D'],
+                  clarification: "探索对掌控互动节奏的偏好",
+                  choices: [
+                    { text: "完全不喜欢，喜欢跟随", scores: { D: 0 } },
+                    { text: "不太喜欢，更愿意平等", scores: { D: 1 } },
+                    { text: "有时喜欢，有时不喜欢", scores: { D: 2 } },
+                    { text: "比较喜欢，享受掌控感", scores: { D: 3 } },
+                    { text: "非常喜欢，享受完全掌控", scores: { D: 4 } }
+                ]},
+                                
+                // 新增 4 题（心理深度）
+                { id: 5, text: "您多久会主动在亲密互动中采取主导地位？", measures: ['D'],
+                  clarification: "探索实际行为中主导的频率",
+                  choices: [
+                    { text: "几乎从不，我更愿意跟随", scores: { D: 0 } },
+                    { text: "很少，偶尔被要求时会", scores: { D: 1 } },
+                    { text: "有时，看情况和心情", scores: { D: 2 } },
+                    { text: "经常，我喜欢主动引导", scores: { D: 3 } },
+                    { text: "几乎总是，我自然就会主导", scores: { D: 4 } }
+                ]},
+                                
+                { id: 6, text: "在亲密互动中，您有多渴望拥有对伴侣的控制权？", measures: ['D'],
+                  clarification: "探索对控制权的渴望强度",
+                  choices: [
+                    { text: "完全不想控制，平等最好", scores: { D: 0 } },
+                    { text: "偶尔想主导一下", scores: { D: 1 } },
+                    { text: "有时想掌控局面", scores: { D: 2 } },
+                    { text: "经常想拥有控制权", scores: { D: 3 } },
+                    { text: "非常强烈，我会主动寻求这种状态", scores: { D: 4 } }
+                ]},
+                                
+                { id: 7, text: "当伴侣明确表示今天不想进行任何形式的权力交换时，您的第一反应是？", measures: ['D'],
+                  clarification: "测试控制欲的强度——面对拒绝时的真实感受",
+                  choices: [
+                    { text: "完全接受，这很正常", scores: { D: 0 } },
+                    { text: "有点小失落，但很快就接受了", scores: { D: 1 } },
+                    { text: "会询问原因，并表达一点希望", scores: { D: 2 } },
+                    { text: "比较失落，会想之后找机会再提起", scores: { D: 3 } },
+                    { text: "强烈失落，这次没能主导的感觉会持续一段时间", scores: { D: 4 } }
+                ]},
+                                
+                { id: 8, text: "您幻想在亲密关系中完全掌控对方的频率是？", measures: ['D'],
+                  clarification: "探索支配幻想的频率",
+                  choices: [
+                    { text: "几乎从不幻想", scores: { D: 0 } },
+                    { text: "偶尔想过", scores: { D: 1 } },
+                    { text: "有时会幻想", scores: { D: 2 } },
+                    { text: "经常幻想", scores: { D: 3 } },
+                    { text: "几乎总是，这是我最常见的幻想", scores: { D: 4 } }
+                ]},
+                
+                // ========== sub 维度：权力臣服倾向（8 题）==========
+                // 保留 4 题（表面行为）+ 重写 4 题（心理深度）
+                { id: 9, text: "将控制权交给信任的伴侣，您的感受是？", measures: ['sub'],
+                  clarification: "探索交出控制权时的真实感受",
+                  choices: [
+                    { text: "非常不安，想要保持控制", scores: { sub: 0 } },
+                    { text: "有些不适，需要适应", scores: { sub: 1 } },
+                    { text: "中立，取决于情况", scores: { sub: 2 } },
+                    { text: "感到放松和安心", scores: { sub: 3 } },
+                    { text: "带来极大的情感满足和释放", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 10, text: "接受伴侣的照顾和呵护时，您是否感到不自在、想回避？", measures: ['sub'],
+                  clarification: "本题为反向题：选择「完全不会」代表您能自然地接受照顾",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，我能自然接受", scores: { sub: 0 } },
+                    { text: "不太会，偶尔会", scores: { sub: 1 } },
+                    { text: "一般，看对方的方式", scores: { sub: 2 } },
+                    { text: "经常会，觉得不自在", scores: { sub: 3 } },
+                    { text: "非常会，会本能地想推开", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 11, text: "您是否享受服从明确的指令和规则？", measures: ['sub'],
+                  clarification: "探索对服从指令和规则的兴趣",
+                  choices: [
+                    { text: "完全不享受，偏好自主", scores: { sub: 0 } },
+                    { text: "不太享受", scores: { sub: 1 } },
+                    { text: "中立", scores: { sub: 2 } },
+                    { text: "有些享受", scores: { sub: 3 } },
+                    { text: "非常享受，这让我感到安心", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 12, text: "在信任的伴侣面前承认「我想被引导、被照顾」，对您来说？", measures: ['sub'],
+                  clarification: "指向关系中的示弱与托付，而非一般的自我表露",
+                  choices: [
+                    { text: "非常困难，我从不让对方看到这一面", scores: { sub: 0 } },
+                    { text: "有些困难，需要很长时间的信任", scores: { sub: 1 } },
+                    { text: "一般，看关系和状态", scores: { sub: 2 } },
+                    { text: "比较自然，关系稳定时可以", scores: { sub: 3 } },
+                    { text: "很自然，示弱本身让我感到亲密", scores: { sub: 4 } }
+                ]},
+                                
+                // 新增 4 题（心理深度）
+                { id: 13, text: "在亲密关系中，您是否享受被对方'使用'的感觉？", measures: ['sub'],
+                  clarification: "探索被对方当作满足需求对象的感受",
+                  choices: [
+                    { text: "完全不喜欢，这让我感到被利用", scores: { sub: 0 } },
+                    { text: "不太喜欢", scores: { sub: 1 } },
+                    { text: "可以接受，看情况", scores: { sub: 2 } },
+                    { text: "比较享受，被需要让我感到满足", scores: { sub: 3 } },
+                    { text: "非常享受，被需要的感觉让我很满足", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 14, text: "您幻想完全服从一个支配者的频率是？", measures: ['sub'],
+                  clarification: "探索臣服幻想的频率",
+                  choices: [
+                    { text: "几乎从不幻想", scores: { sub: 0 } },
+                    { text: "偶尔想过", scores: { sub: 1 } },
+                    { text: "有时会幻想", scores: { sub: 2 } },
+                    { text: "经常幻想", scores: { sub: 3 } },
+                    { text: "几乎总是，这是我最常见的幻想", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 15, text: "您幻想完全服从一个支配者的场景时，这种幻想对您的吸引程度是？", measures: ['sub'],
+                  clarification: "探索臣服幻想的吸引力强度",
+                  choices: [
+                    { text: "完全没有吸引力，我不想象这种场景", scores: { sub: 0 } },
+                    { text: "吸引力很小，偶尔会想一下", scores: { sub: 1 } },
+                    { text: "有一定吸引力，被照顾的感觉不错", scores: { sub: 2 } },
+                    { text: "比较吸引，交出控制让我感到安心", scores: { sub: 3 } },
+                    { text: "非常有吸引力，这是我最渴望的幻想", scores: { sub: 4 } }
+                ]},
+                                
+                { id: 16, text: "在亲密互动中，您是否享受被对方评价或打分？", measures: ['sub'],
+                  clarification: "探索对被评价和考核的接受度",
+                  choices: [
+                    { text: "完全不喜欢，这让我感到被评判", scores: { sub: 0 } },
+                    { text: "不太喜欢", scores: { sub: 1 } },
+                    { text: "可以接受轻微的评价", scores: { sub: 2 } },
+                    { text: "比较享受，被评价让我更有动力", scores: { sub: 3 } },
+                    { text: "非常享受，被评价和考核是我的重要体验", scores: { sub: 4 } }
+                ]},
+                
+                // ========== S 维度：施虐倾向（8 题）==========
+                // 覆盖：疼痛、束缚、感官剥夺、规则命令、惩罚姿势、语言羞辱、观察反应、综合幻想
+                { id: 17, text: "您是否享受对伴侣施加轻度身体疼痛（如打屁股）？", measures: ['S'],
+                  clarification: "在双方同意的前提下，探索施加轻度疼痛刺激的兴趣",
+                  choices: [
+                    { text: "完全不享受，我更喜欢温和互动", scores: { S: 0 } },
+                    { text: "不太享受，能免则免", scores: { S: 1 } },
+                    { text: "可以尝试，如果伴侣要求", scores: { S: 2 } },
+                    { text: "比较享受，有掌控感", scores: { S: 3 } },
+                    { text: "非常享受，从中获得愉悦", scores: { S: 4 } }
+                  ]},
+                                
+                { id: 18, text: "亲手施加身体束缚（如固定手腕、限制移动）这件事，您享受吗？", measures: ['S'],
+                  clarification: "探索对限制对方行动自由的兴趣",
+                  choices: [
+                    { text: "完全不感兴趣", scores: { S: 0 } },
+                    { text: "不太感兴趣", scores: { S: 1 } },
+                    { text: "可以试试", scores: { S: 2 } },
+                    { text: "比较享受，束缚的过程本身让我兴奋", scores: { S: 3 } },
+                    { text: "非常享受，施加束缚时的心理感受是我最刺激的部分", scores: { S: 4 } }
+                ]},
+                                
+                { id: 19, text: "蒙住伴侣的眼睛、让对方无法预测下一个刺激，您享受吗？", measures: ['S'],
+                  clarification: "探索制造未知与期待的过程带来的投入感",
+                  choices: [
+                    { text: "完全没兴趣", scores: { S: 0 } },
+                    { text: "不太感兴趣", scores: { S: 1 } },
+                    { text: "可以试试", scores: { S: 2 } },
+                    { text: "比较享受，看不见对方反应的悬念让我很投入", scores: { S: 3 } },
+                    { text: "非常享受，制造未知的过程本身就让我极度兴奋", scores: { S: 4 } }
+                ]},
+                                
+                { id: 20, text: "用语言向伴侣下达指令与命令，这个过程您享受吗？", measures: ['S'],
+                  clarification: "探索对行为控制和命令的兴趣",
+                  choices: [
+                    { text: "完全不享受", scores: { S: 0 } },
+                    { text: "不太享受", scores: { S: 1 } },
+                    { text: "可以尝试", scores: { S: 2 } },
+                    { text: "比较享受，用语言下达指令让我有感觉", scores: { S: 3 } },
+                    { text: "非常享受，命令的过程本身是我最大的刺激来源", scores: { S: 4 } }
+                ]},
+                                
+                { id: 21, text: "要求对方罚跪、罚站或维持特定姿势，这个过程您享受吗？", measures: ['S'],
+                  clarification: "探索对惩罚性姿势控制的兴趣",
+                  choices: [
+                    { text: "完全不感兴趣", scores: { S: 0 } },
+                    { text: "不太感兴趣", scores: { S: 1 } },
+                    { text: "可以试试", scores: { S: 2 } },
+                    { text: "比较享受，要求对方维持姿势的过程让我投入", scores: { S: 3 } },
+                    { text: "非常享受，让对方屏息等待的那种张力最令我兴奋", scores: { S: 4 } }
+                ]},
+                                
+                { id: 22, text: "用羞辱或贬低的语言对伴侣说话，我会感到抗拒或不忍心？", measures: ['S'],
+                  clarification: "本题为反向题：选择「完全不会」代表您在双方约定下可以自如地使用这类语言",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，约定好就完全没问题", scores: { S: 0 } },
+                    { text: "不太会，会有些顾虑", scores: { S: 1 } },
+                    { text: "一般，取决于对方能否接受", scores: { S: 2 } },
+                    { text: "经常会，觉得不忍心", scores: { S: 3 } },
+                    { text: "非常会，绝对说不出口", scores: { S: 4 } }
+                ]},
+                                
+                { id: 23, text: "当您对伴侣施加刺激时，看到对方的反应（声音、表情、身体变化），您的感觉是？", measures: ['S'],
+                  clarification: "探索施虐快感中的观察反馈",
+                  choices: [
+                    { text: "不太关注，我更关注自己的感受", scores: { S: 0 } },
+                    { text: "偶尔会看，但不是重点", scores: { S: 1 } },
+                    { text: "会注意，确认对方状态", scores: { S: 2 } },
+                    { text: "比较享受，对方的反应让我更有感觉", scores: { S: 3 } },
+                    { text: "非常享受，对方的反应是我最大的快感来源", scores: { S: 4 } }
+                ]},
+                                
+                { id: 24, text: "您是否享受让伴侣等待或猜测接下来会发生什么？", measures: ['S'],
+                  clarification: "探索通过延迟和不确定性制造紧张感的兴趣",
+                  choices: [
+                    { text: "不享受，我偏好直接", scores: { S: 0 } },
+                    { text: "不太享受", scores: { S: 1 } },
+                    { text: "可以试试", scores: { S: 2 } },
+                    { text: "比较享受，制造紧张感很有趣", scores: { S: 3 } },
+                    { text: "非常享受，掌控节奏和期待是我的乐趣", scores: { S: 4 } }
+                ]},
+                
+                // ========== M 维度：受虐倾向（8 题）==========
+                // 覆盖：疼痛、被束缚、感官剥夺、服从命令、语言羞辱、核心偏好、体验意义、综合幻想
+                { id: 25, text: "您是否享受接收轻度身体疼痛（如咬痕）？", measures: ['M'],
+                  clarification: "在双方同意的前提下，探索接收轻度疼痛刺激的兴趣",
+                  choices: [
+                    { text: "完全不喜欢，避免任何身体刺激", scores: { M: 0 } },
+                    { text: "不太喜欢，能免则免", scores: { M: 1 } },
+                    { text: "可以接受轻微的刺激", scores: { M: 2 } },
+                    { text: "比较享受，有特殊感觉", scores: { M: 3 } },
+                    { text: "非常享受，从中获得愉悦", scores: { M: 4 } }
+                  ]},
+                                
+                { id: 26, text: "自己的行动被限制、无法自由移动时，您是否感到强烈的不安？", measures: ['M'],
+                  clarification: "本题为反向题：选择「完全不会」代表被束缚对您是舒适体验而非压力",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，这对我不是压力", scores: { M: 0 } },
+                    { text: "不太会，偶尔有", scores: { M: 1 } },
+                    { text: "一般，取决于对象和场合", scores: { M: 2 } },
+                    { text: "经常会，明显不安", scores: { M: 3 } },
+                    { text: "非常会，会本能地想挣脱", scores: { M: 4 } }
+                ]},
+                                
+                { id: 27, text: "被蒙住眼睛、无法预测下一个刺激，您的感觉是？", measures: ['M'],
+                  clarification: "探索感官剥夺带来的臣服感",
+                  choices: [
+                    { text: "非常恐惧，立即拒绝", scores: { M: 0 } },
+                    { text: "有些害怕，但愿意尝试", scores: { M: 1 } },
+                    { text: "紧张又期待", scores: { M: 2 } },
+                    { text: "比较享受这种未知感", scores: { M: 3 } },
+                    { text: "非常享受，感官更敏锐", scores: { M: 4 } }
+                ]},
+                                
+                { id: 28, text: "您是否享受在互动中承受身体挑战（保持困难姿势等）？", measures: ['M'],
+                  clarification: "探索对身体强度和挑战的享受程度",
+                  choices: [
+                    { text: "完全不享受，我偏好舒适", scores: { M: 0 } },
+                    { text: "不太享受，但能忍受", scores: { M: 1 } },
+                    { text: "可以接受轻微的不适", scores: { M: 2 } },
+                    { text: "比较享受，挑战让我感到满足", scores: { M: 3 } },
+                    { text: "非常享受，身体强度是我最看重的体验", scores: { M: 4 } }
+                ]},
+                                
+                { id: 29, text: "您是否享受通过语言被贬低或羞辱来增强互动强度？", measures: ['M'],
+                  clarification: "探索对语言羞辱的接受度（在双方同意前提下）",
+                  choices: [
+                    { text: "完全不喜欢，这伤害我的自尊", scores: { M: 0 } },
+                    { text: "不太喜欢", scores: { M: 1 } },
+                    { text: "可以接受轻微的程度", scores: { M: 2 } },
+                    { text: "比较享受，语言能增强臣服感", scores: { M: 3 } },
+                    { text: "非常享受，语言羞辱是我的重要体验", scores: { M: 4 } }
+                ]},
+                                
+                { id: 30, text: "当多种强度刺激同时叠加（如束缚与疼痛同时进行）时，您的感受是？", measures: ['M'],
+                  clarification: "探索对复合强度体验的反应",
+                  choices: [
+                    { text: "无法承受，我需要单一刺激", scores: { M: 0 } },
+                    { text: "不太能，需要分开进行", scores: { M: 1 } },
+                    { text: "可以接受，但要循序渐进", scores: { M: 2 } },
+                    { text: "比较享受，叠加让我进入更深的状态", scores: { M: 3 } },
+                    { text: "非常享受，我追求的正是这种叠加感", scores: { M: 4 } }
+                ]},
+                                
+                { id: 31, text: "接收强度刺激时，您更多体验到的是？", measures: ['M'],
+                  clarification: "探索体验背后的心理意义",
+                  choices: [
+                    { text: "纯粹的不舒服", scores: { M: 0 } },
+                    { text: "轻微的快感混合紧张", scores: { M: 1 } },
+                    { text: "通过忍耐证明自己的价值", scores: { M: 2 } },
+                    { text: "转化为情感释放和臣服感", scores: { M: 3 } },
+                    { text: "这是一种深刻的连接——通过共同经历强度建立信任", scores: { M: 4 } }
+                ]},
+                                
+                { id: 32, text: "高强度互动后，您是否享受身体余韵感（皮肤发热、肌肉酸胀）？", measures: ['M'],
+                  clarification: "探索高强度体验后的身体余韵感受",
+                  choices: [
+                    { text: "不喜欢，只想尽快恢复", scores: { M: 0 } },
+                    { text: "没什么特别感觉", scores: { M: 1 } },
+                    { text: "偶尔能感受到一种特殊的平静", scores: { M: 2 } },
+                    { text: "比较享受，那种余韵感很舒服", scores: { M: 3 } },
+                    { text: "非常享受，余韵感是体验的重要组成部分", scores: { M: 4 } }
+                ]},
+                
+                // ========== SW 维度：角色切换倾向（8 题）==========
+                // 微调措辞，强化心理动机
+                { id: 33, text: "在不同的亲密关系中，您是否倾向于保持固定不变的角色？", measures: ['SW'],
+                  clarification: "本题为反向题：选择「完全不会」代表您的角色具有弹性",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，我的角色有弹性", scores: { SW: 0 } },
+                    { text: "不太会，大多保持不变", scores: { SW: 1 } },
+                    { text: "一般，看情况", scores: { SW: 2 } },
+                    { text: "经常会保持固定", scores: { SW: 3 } },
+                    { text: "非常会，固定角色对我很重要", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 34, text: "尝试对立角色（如从主导变为臣服或反之）的想法？", measures: ['SW'],
+                  clarification: "探索角色转换带来的心理体验",
+                  choices: [
+                    { text: "感到困惑和不适应", scores: { SW: 0 } },
+                    { text: "有些挑战，不太可能", scores: { SW: 1 } },
+                    { text: "可以探索不同自我", scores: { SW: 2 } },
+                    { text: "丰富和有趣", scores: { SW: 3 } },
+                    { text: "极大的自由和满足", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 35, text: "您是否愿意根据伴侣需求调整自己的角色？", measures: ['SW'],
+                  clarification: "探索为伴侣调整角色的意愿",
+                  choices: [
+                    { text: "很难做到，偏好固定", scores: { SW: 0 } },
+                    { text: "需要很大努力", scores: { SW: 1 } },
+                    { text: "可以适度调整", scores: { SW: 2 } },
+                    { text: "相对容易", scores: { SW: 3 } },
+                    { text: "自然而轻松", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 36, text: "您是否享受在不同关系中扮演不同角色？", measures: ['SW'],
+                  clarification: "探索扮演不同角色的享受程度",
+                  choices: [
+                    { text: "完全不享受，偏好固定角色", scores: { SW: 0 } },
+                    { text: "不太享受，但有需要可以尝试", scores: { SW: 1 } },
+                    { text: "一般，看情况", scores: { SW: 2 } },
+                    { text: "比较享受，增加多样性", scores: { SW: 3 } },
+                    { text: "非常享受，是理想状态", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 37, text: "在不同情境下改变角色让您感觉？", measures: ['SW'],
+                  clarification: "探索情境变化对角色切换的影响",
+                  choices: [
+                    { text: "感到失去自我", scores: { SW: 0 } },
+                    { text: "有些不适应", scores: { SW: 1 } },
+                    { text: "可以接受", scores: { SW: 2 } },
+                    { text: "感到丰富和适应性强", scores: { SW: 3 } },
+                    { text: "享受这种灵活性", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 38, text: "您是否享受在互动中突然改变角色（如从温柔变为严厉）？", measures: ['SW'],
+                  clarification: "探索互动中角色转换的享受程度",
+                  choices: [
+                    { text: "完全不享受，我偏好保持一致", scores: { SW: 0 } },
+                    { text: "不太享受，变化让我感到不自在", scores: { SW: 1 } },
+                    { text: "可以尝试，看情况", scores: { SW: 2 } },
+                    { text: "比较享受，变化增加互动的趣味", scores: { SW: 3 } },
+                    { text: "非常享受，角色转换是我最喜欢的部分", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 39, text: "固定的角色定位让您感觉？", measures: ['SW'],
+                  clarification: "探索对固定角色定位的感受",
+                  choices: [
+                    { text: "安全和舒适", scores: { SW: 0 } },
+                    { text: "比较适合", scores: { SW: 1 } },
+                    { text: "都可以接受", scores: { SW: 2 } },
+                    { text: "有些限制", scores: { SW: 3 } },
+                    { text: "过于束缚和刻板", scores: { SW: 4 } }
+                ]},
+                                
+                { id: 40, text: "当伴侣需要您扮演与惯常角色相反的一面时，您调整起来？", measures: ['SW'],
+                  clarification: "例如：惯常主导的人尝试交出控制权，或相反",
+                  choices: [
+                    { text: "非常困难，几乎做不到", scores: { SW: 0 } },
+                    { text: "比较勉强，需要很大努力", scores: { SW: 1 } },
+                    { text: "可以做到，但不太自然", scores: { SW: 2 } },
+                    { text: "比较自然，稍作适应即可", scores: { SW: 3 } },
+                    { text: "很自然，切换本身就有乐趣", scores: { SW: 4 } }
+                ]},
+                
+                // ========== BR 维度：调皮倾向（8 题）==========
+                // 微调措辞，强化心理动机
+                { id: 41, text: "在亲密互动中，您是否喜欢通过开玩笑式顶嘴、故意不马上配合来互动？", measures: ['BR'],
+                  clarification: "注意：这里测量的是您自己表现出调皮行为的倾向，而非欣赏他人的调皮行为",
+                  choices: [
+                    { text: "从不，我喜欢直接配合", scores: { BR: 0 } },
+                    { text: "很少，基本直接配合", scores: { BR: 1 } },
+                    { text: "有时会，增加趣味", scores: { BR: 2 } },
+                    { text: "经常这样，享受这种互动", scores: { BR: 3 } },
+                    { text: "几乎总是，是我的互动风格", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 42, text: "您是否享受通过轻微挑衅或玩笑来引发对方的特别关注和回应？", measures: ['BR'],
+                  clarification: "注意：这里指的是您自己表现出调皮行为",
+                  choices: [
+                    { text: "从不享受，我是直接的人", scores: { BR: 0 } },
+                    { text: "不太享受，偶尔开玩笑", scores: { BR: 1 } },
+                    { text: "有些享受，喜欢互动张力", scores: { BR: 2 } },
+                    { text: "比较享受，经常这样做", scores: { BR: 3 } },
+                    { text: "非常享受，这是我的表达方式", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 43, text: "在亲密关系中，您是否会故意做出调皮行为来测试对方的边界和反应？", measures: ['BR'],
+                  clarification: "注意：这是调皮行为，不是真正的反抗",
+                  choices: [
+                    { text: "从来不会，我总是直接表达", scores: { BR: 0 } },
+                    { text: "很少会，大部分时间直接配合", scores: { BR: 1 } },
+                    { text: "偶尔会，觉得这样有趣", scores: { BR: 2 } },
+                    { text: "经常会，享受这种互动", scores: { BR: 3 } },
+                    { text: "几乎总是，这是我的互动风格", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 44, text: "面对需要遵守的约定或规则时，您通常会不加思考地立刻执行吗？", measures: ['BR'],
+                  clarification: "本题为反向题：选择「完全不会」代表您习惯用玩笑拖延或讨价还价",
+                  reverse: true,
+                  choices: [
+                    { text: "完全不会，我习惯先拖一拖", scores: { BR: 0 } },
+                    { text: "不太会，有时会", scores: { BR: 1 } },
+                    { text: "一般，看规则是否重要", scores: { BR: 2 } },
+                    { text: "经常会，我基本都照做", scores: { BR: 3 } },
+                    { text: "非常会，立刻执行", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 45, text: "当对方真的因为您的顶嘴而认真说「别闹了」时，您的反应是？", measures: ['BR'],
+                  clarification: "探索真实边界被触碰时的反应",
+                  choices: [
+                    { text: "立刻收敛并道歉", scores: { BR: 0 } },
+                    { text: "会收敛，但心里觉得可惜", scores: { BR: 1 } },
+                    { text: "看当时的情境和心情", scores: { BR: 2 } },
+                    { text: "会换个方式继续试探", scores: { BR: 3 } },
+                    { text: "这说明我成功让他认真回应我了", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 46, text: "在没有约定的日常相处中，您会主动制造小麻烦来逗对方吗？", measures: ['BR'],
+                  clarification: "探索非常规情境下的调皮倾向",
+                  choices: [
+                    { text: "从不，我偏好一本正经", scores: { BR: 0 } },
+                    { text: "几乎不会，偶尔才", scores: { BR: 1 } },
+                    { text: "偶尔会，看心情", scores: { BR: 2 } },
+                    { text: "经常，这是日常的相处方式", scores: { BR: 3 } },
+                    { text: "几乎总是，没有玩笑的关系很无聊", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 47, text: "当对方对您的调皮行为做出反应时，您的感受是？", measures: ['BR'],
+                  clarification: "探索对对方回应的享受程度",
+                  choices: [
+                    { text: "不太在意，我只是随口说说", scores: { BR: 0 } },
+                    { text: "偶尔觉得有趣", scores: { BR: 1 } },
+                    { text: "有些享受对方的反应", scores: { BR: 2 } },
+                    { text: "比较享受，对方的反应让我更开心", scores: { BR: 3 } },
+                    { text: "非常享受，对方的反应是我最大的动力", scores: { BR: 4 } }
+                ]},
+                                
+                { id: 48, text: "在互动中，您是否喜欢制造一些小麻烦或意外来增加趣味？", measures: ['BR'],
+                  clarification: "探索主动制造趣味性事件的倾向",
+                  choices: [
+                    { text: "不喜欢，我偏好按计划进行", scores: { BR: 0 } },
+                    { text: "不太喜欢", scores: { BR: 1 } },
+                    { text: "偶尔会，看心情", scores: { BR: 2 } },
+                    { text: "比较喜欢，小意外让互动更有趣", scores: { BR: 3 } },
+                    { text: "非常喜欢，制造意外是我的拿手好戏", scores: { BR: 4 } }
+                ]},
+            ];
+            
+            let state = {
+                currentQuestionIndex: 0,
+                userAnswers: {},
+                questions: [],
+                testCompleted: false,
+                answeredCount: 0,
+                isProcessing: false,
+                responseTimes: {},
+                questionStartTimes: {}
+            };
+            
+            const elements = {};
+            
+            function initElements() {
+                const ids = [
+                    'welcomeScene', 'testScene', 'resultsScene', 'infoModal',
+                    'startBtn', 'infoBtn', 'restartBtn', 'showInfoBtn', 'closeModalBtn',
+                    'currentQuestionNum', 'totalQuestions', 'questionText', 'choicesContainer',
+                    'prevBtn', 'scoresContainer', 'resultTitle', 'radarChartContainer',
+                    'coreFindings', 'dimensionDetails', 'compatibilityAnalysis',
+                    'developmentTips', 'communicationGuide', 'testScience',
+                    'progressFill',
+                    'inconsistencyWarnings', 'exportBtn'
+                ];
+                
+                ids.forEach(id => {
+                    elements[id] = document.getElementById(id);
+                });
+            }
+            
+            function showScene(sceneId) {
+                document.querySelectorAll('.scene').forEach(scene => {
+                    scene.classList.remove('active');
+                });
+                
+                const target = elements[sceneId];
+                if (target) {
+                    target.classList.add('active');
+                    
+                    if (sceneId === 'testScene') {
+                        renderQuestion();
+                    } else if (sceneId === 'resultsScene') {
+                        showResults();
+                    }
+                }
+            }
+            
+            function shuffleQuestions(questions) {
+                const shuffled = [...questions];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+            
+            function initializeTest() {
+                state.currentQuestionIndex = 0;
+                state.userAnswers = {};
+                state.testCompleted = false;
+                state.answeredCount = 0;
+                state.isProcessing = false;
+                state.responseTimes = {};
+                state.questionStartTimes = {};
+                
+                state.questions = shuffleQuestions([...QUESTION_BANK]);
+                
+                // 验证题目分布：确保每个维度都有 8 题
+                const dimensionCounts = {};
+                Object.keys(ATTRIBUTES).forEach(dim => dimensionCounts[dim] = 0);
+                
+                state.questions.forEach(question => {
+                    question.measures.forEach(dim => {
+                        if (dimensionCounts.hasOwnProperty(dim)) {
+                            dimensionCounts[dim]++;
+                        }
+                    });
+                });
+                
+                // 如果随机化后分布不均，使用原始题库
+                // 每维度题量校验：反向题同样计入，保证归一化分母一致
+                const allDimensionsCorrect = Object.keys(dimensionCounts).every(
+                    dim => dimensionCounts[dim] === 8
+                );
+                
+                if (!allDimensionsCorrect || state.questions.length !== QUESTION_BANK.length) {
+                    console.warn('题目分布异常，使用原始题库');
+                    state.questions = [...QUESTION_BANK];
+                }
+                
+                showScene('testScene');
+                updateProgress();
+            }
+            
+            function updateProgress() {
+                const progressFill = elements.progressFill;
+                const currentQuestionNum = elements.currentQuestionNum;
+                const totalQuestionsEl = elements.totalQuestions;
+                
+                if (progressFill && currentQuestionNum) {
+                    // 以已答题数计算进度，而非当前题目索引
+                    const progress = (state.questions.length > 0)
+                        ? (state.answeredCount / state.questions.length) * 100
+                        : 0;
+                    progressFill.style.width = `${progress}%`;
+                    currentQuestionNum.textContent = state.currentQuestionIndex + 1;
+                    if (totalQuestionsEl) {
+                        totalQuestionsEl.textContent = state.questions.length;
+                    }
+                }
+            }
+            
+            function renderQuestion() {
+                if (!state.questions || state.questions.length === 0) {
+                    return;
+                }
+                
+                if (state.currentQuestionIndex < 0) {
+                    state.currentQuestionIndex = 0;
+                } else if (state.currentQuestionIndex >= state.questions.length) {
+                    state.currentQuestionIndex = state.questions.length - 1;
+                }
+                
+                const question = state.questions[state.currentQuestionIndex];
+                if (!question) {
+                    return;
+                }
+                
+                // 记录本题开始时间
+                if (!state.questionStartTimes[question.id]) {
+                    state.questionStartTimes[question.id] = Date.now();
+                }
+                
+                if (elements.questionText) {
+                    const textEl = elements.questionText.querySelector('.question-text');
+                    const clarEl = elements.questionText.querySelector('.question-clarification');
+                    if (textEl) textEl.textContent = question.text;
+                    if (clarEl) {
+                        if (question.clarification) {
+                            clarEl.textContent = question.clarification;
+                            clarEl.classList.add('visible');
+                        } else {
+                            clarEl.textContent = '\u00A0';
+                            clarEl.classList.remove('visible');
+                        }
+                    }
+                }
+                
+                if (elements.choicesContainer) {
+                    elements.choicesContainer.innerHTML = '';
+                    
+                    if (question.choices) {
+                        question.choices.forEach((choice, index) => {
+                            const button = document.createElement('button');
+                            button.className = 'choice-btn';
+                            button.innerHTML = `
+                                <span class="number">${index + 1}</span>
+                                <span>${choice.text}</span>
+                            `;
+                            button.dataset.index = index;
+                            
+                            const savedChoice = state.userAnswers[question.id];
+                            if (savedChoice === index) {
+                                button.classList.add('selected');
+                            }
+                            
+                            elements.choicesContainer.appendChild(button);
+                        });
+                    }
+                }
+                
+                if (elements.prevBtn) {
+                    elements.prevBtn.disabled = state.currentQuestionIndex === 0;
+                }
+                
+                // 题目切换入场动画
+                if (elements.questionText && elements.questionText.classList) {
+                    elements.questionText.classList.remove('q-enter');
+                    void elements.questionText.offsetWidth;
+                    elements.questionText.classList.add('q-enter');
+                }
+                
+                updateProgress();
+            }
+            
+            function handleChoice(choiceIndex) {
+                if (typeof choiceIndex !== 'number' || choiceIndex < 0) return;
+                if (state.isProcessing) return;
+                
+                const question = state.questions[state.currentQuestionIndex];
+                if (!question || choiceIndex >= question.choices.length) return;
+                
+                state.isProcessing = true;
+                
+                // 记录答题时间（用于后续分析）
+                state.responseTimes[question.id] = Date.now() - (state.questionStartTimes[question.id] || Date.now());
+                
+                document.querySelectorAll('.choice-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                const selectedBtn = document.querySelector(`.choice-btn[data-index="${choiceIndex}"]`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('selected');
+                }
+                
+                const wasAnswered = state.userAnswers.hasOwnProperty(question.id);
+                state.userAnswers[question.id] = choiceIndex;
+                
+                if (!wasAnswered) {
+                    state.answeredCount = Object.keys(state.userAnswers).length;
+                    updateProgress();
+                }
+                
+                setTimeout(() => {
+                    // 修复：在最后一题时，检查所有题目是否都已完成
+                    if (state.currentQuestionIndex === state.questions.length - 1) {
+                        // 检查是否所有题目都已回答
+                        if (state.answeredCount < state.questions.length) {
+                            // 找到第一个未答的题目并跳转回去
+                            for (let i = 0; i < state.questions.length; i++) {
+                                if (!state.userAnswers.hasOwnProperty(state.questions[i].id)) {
+                                    state.currentQuestionIndex = i;
+                                    renderQuestion();
+                                    // ★ 使用 Toast 替代 alert，并添加高亮提示
+                                    const container = document.querySelector('.question-container');
+                                    if (container) {
+                                        container.classList.add('unanswered-flash');
+                                        setTimeout(() => container.classList.remove('unanswered-flash'), 600);
+                                    }
+                                    Toast.show(`还有 ${state.questions.length - state.answeredCount} 题未作答。`);
+                                    state.isProcessing = false;
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        state.testCompleted = true;
+                        state.isProcessing = false;
+                        showScene('resultsScene');
+                        return;
+                    }
+                    
+                    state.currentQuestionIndex++;
+                    
+                    if (state.currentQuestionIndex < state.questions.length) {
+                        renderQuestion();
+                    }
+                    state.isProcessing = false;
+                }, 300);
+            }
+            
+            function goToPreviousQuestion() {
+                if (state.currentQuestionIndex > 0) {
+                    state.currentQuestionIndex--;
+                    renderQuestion();
+                }
+            }
+            
+            function calculateTheoreticalMaxScores() {
+                const theoreticalMaxScores = {};
+                Object.keys(ATTRIBUTES).forEach(dim => theoreticalMaxScores[dim] = 0);
+                
+                QUESTION_BANK.forEach(question => {
+                    question.measures.forEach(dim => {
+                        if (ATTRIBUTES.hasOwnProperty(dim)) {
+                            let maxScoreForQuestion = 0;
+                            question.choices.forEach(choice => {
+                                if (choice.scores[dim] > maxScoreForQuestion) {
+                                    maxScoreForQuestion = choice.scores[dim];
+                                }
+                            });
+                            theoreticalMaxScores[dim] += maxScoreForQuestion;
+                        }
+                    });
+                });
+                
+                return theoreticalMaxScores; // 每维度 8 题 x 最高 4 分 = 32，与题库结构绑定
+            }
+            
+            function calculateScores() {
+                const scores = {};
+                Object.keys(ATTRIBUTES).forEach(dim => scores[dim] = 0);
+                
+                if (!state.questions || !state.userAnswers) return { scores };
+                
+                for (let i = 0; i < state.questions.length; i++) {
+                    const question = state.questions[i];
+                    if (!question || !question.id || !question.choices || !question.measures) continue;
+                    
+                    const choiceIndex = state.userAnswers[question.id];
+                    if (choiceIndex === undefined || choiceIndex === null) continue;
+                    if (choiceIndex < 0 || choiceIndex >= question.choices.length) continue;
+                    
+                    const choice = question.choices[choiceIndex];
+                    if (!choice || !choice.scores) continue;
+                    
+                    Object.keys(choice.scores).forEach(dim => {
+                        if (ATTRIBUTES.hasOwnProperty(dim)) {
+                            let score = choice.scores[dim];
+                            if (typeof score === 'number' && !isNaN(score) && score >= 0) {
+                                // 反向题：作答值需翻转后再累加
+                                // 题目已在数据层预置了正向分值，此处仅对打 reverse 标记的题目做二次校正，
+                                // 用于防御未来新增反向题时忘记预置分值的情况。
+                                if (question.reverse) {
+                                    const maxPerChoice = question.choices.length - 1;
+                                    score = maxPerChoice - score;
+                                }
+                                scores[dim] += score;
+                            }
+                        }
+                    });
+                }
+                
+                Object.keys(ATTRIBUTES).forEach(dim => {
+                    if (scores[dim] === undefined) scores[dim] = 0;
+                });
+                
+                return { scores };
+            }
+            
+            function calculateNormalizedScores(rawScores) {
+                const normalized = {};
+                const theoreticalMaxScores = calculateTheoreticalMaxScores();
+                
+                Object.keys(ATTRIBUTES).forEach(dim => {
+                    let rawScore = rawScores[dim] || 0;
+                    if (typeof rawScore !== 'number' || isNaN(rawScore)) {
+                        rawScore = 0;
+                    }
+                    
+                    const maxPossibleScore = theoreticalMaxScores[dim] || 1;
+                    
+                    let normalizedValue = 0;
+                    if (maxPossibleScore > 0) {
+                        normalizedValue = Math.min(100, Math.max(0, Math.round((rawScore / maxPossibleScore) * 100)));
+                    }
+                    
+                    normalized[dim] = normalizedValue;
+                });
+                
+                return normalized;
+            }
+            
+            function checkAnswerConsistency() {
+                const inconsistencies = [];
+                const rawScores = calculateScores().scores;
+                
+                // 检查D和sub是否同时高分（可能矛盾）
+                const theoreticalMax = calculateTheoreticalMaxScores();
+                const dScore = rawScores.D || 0;
+                const subScore = rawScores.sub || 0;
+                const dMax = theoreticalMax.D || 32;
+                const subMax = theoreticalMax.sub || 32;
+                
+                if (dScore > dMax * 0.7 && subScore > subMax * 0.7) {
+                    inconsistencies.push({
+                        type: 'dual_role',
+                        message: '您的支配与臣服倾向都比较突出。这通常意味着您的角色偏好具有弹性——在不同关系、不同情境中可能呈现不同面向。这是常见的特质类型，不是矛盾或错误。',
+                        dimensions: ['D', 'sub']
+                    });
+                }
+                
+                // 检查S和M是否同时高分（可能是switch，但需注意安全）
+                const sScore = rawScores.S || 0;
+                const mScore = rawScores.M || 0;
+                const sMax = theoreticalMax.S || 32;
+                const mMax = theoreticalMax.M || 32;
+                
+                if (sScore > sMax * 0.7 && mScore > mMax * 0.7) {
+                    inconsistencies.push({
+                        type: 'dual_intensity',
+                        message: '您对给予与接收强度刺激都有较强兴趣。这类双向特质较为少见，通常出现在熟悉强度把控、且沟通充分的有经验玩家身上。请确保所有活动建立在安全、理智、知情同意（SSC）之上，并确认双方都清楚彼此的舒适边界。',
+                        dimensions: ['S', 'M']
+                    });
+                }
+                
+                // 检查BR 与 D/S的合理性
+                const brScore = rawScores.BR || 0;
+                const brMax = theoreticalMax.BR || 32;
+                                
+                if (brScore > brMax * 0.8 && dScore > dMax * 0.7) {
+                    inconsistencies.push({
+                        type: 'brat_dominant',
+                        message: '您的调皮与支配倾向都比较突出。调皮与支配并非互斥——不少人会在掌握主导权的同时保留玩笑式的互动方式。若您的伴侣常扮演被动或臣服角色，建议明确区分「玩笑式顶嘴」与「真实的不服从」，避免产生误解。',
+                        dimensions: ['BR', 'D']
+                    });
+                }
+                                
+                // 检查BR 与 sub 的关系（Brat 不一定需要 sub 倾向，这是正常的）
+                if (brScore > brMax * 0.7 && subScore < subMax * 0.3 && dScore < dMax * 0.3) {
+                    inconsistencies.push({
+                        type: 'brat_without_sub',
+                        message: '您的调皮倾向突出，而支配与臣服倾向都较低。这是一种独立成立的互动风格——您看重的是互动本身的趣味，而非权力交换结构。若伴侣容易把「顶嘴」理解为挑战或拒绝，建议主动说明您的调皮是表达亲近的方式。',
+                        dimensions: ['BR', 'sub', 'D']
+                    });
+                }
+                                
+                // 检查 SW 与固定角色的关系（SW高+D/sub高是正常的Switch特征）
+                const swScore = rawScores.SW || 0;
+                const swMax = theoreticalMax.SW || 32;
+                                
+                if (swScore > swMax * 0.7 && (dScore > dMax * 0.8 || subScore > subMax * 0.8)) {
+                    inconsistencies.push({
+                        type: 'switch_with_fixed',
+                        message: '您的角色弹性较高，同时某个固定角色的倾向也很明确。两者并不冲突：您可能有清晰的首选角色，同时也具备按情境调整的能力。这是Switch 的常见形态。',
+                        dimensions: ['SW', dScore > subScore ? 'D' : 'sub']
+                    });
+                }
+                                
+                return inconsistencies;
+            }
+            
+            function showResults() {
+                // 确保所有题目都已回答
+                if (state.answeredCount < state.questions.length) {
+                    // 找到第一个未答的题目
+                    for (let i = 0; i < state.questions.length; i++) {
+                        if (!state.userAnswers.hasOwnProperty(state.questions[i].id)) {
+                            state.currentQuestionIndex = i;
+                            // 修复：直接切换到 testScene 并渲染，避免 showScene 内部重复调用 renderQuestion
+                            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+                            if (elements.testScene) elements.testScene.classList.add('active');
+                            renderQuestion();
+                            const container = document.querySelector('.question-container');
+                            if (container) {
+                                container.classList.add('unanswered-flash');
+                                setTimeout(() => container.classList.remove('unanswered-flash'), 600);
+                            }
+                            Toast.show(`还有 ${state.questions.length - state.answeredCount} 题未作答。`);
+                            return;
+                        }
+                    }
+                }
+                
+                state.testCompleted = true;
+                
+                const { scores: rawScores } = calculateScores();
+                
+                if (!rawScores || Object.keys(rawScores).length === 0) {
+                    // 修复：使用 Toast 替代 alert
+                    Toast.show('计算结果时出现错误，请重新作答。');
+                    showScene('welcomeScene');
+                    return;
+                }
+                
+                const normalizedScores = calculateNormalizedScores(rawScores);
+                const inconsistencies = checkAnswerConsistency();
+                
+                try {
+                    renderScoreCards(normalizedScores);
+                    renderRadarChart(normalizedScores);
+                    generateInconsistencyWarnings(inconsistencies);
+                    generateCoreFindings(normalizedScores);
+                    generateDimensionDetails(normalizedScores);
+                    const primaryDim = Object.keys(normalizedScores).sort((a, b) => normalizedScores[b] - normalizedScores[a])[0];
+                    generateCompatibilityAnalysis(normalizedScores, primaryDim);
+                    generateDevelopmentTips(normalizedScores, primaryDim);
+                    generateCommunicationGuide(normalizedScores, primaryDim);
+                    generateTestScienceInfo(normalizedScores);
+                } catch (error) {
+                    console.error('Error generating results:', error);
+                    elements.resultTitle.textContent = '结果分析出现问题';
+                    elements.coreFindings.innerHTML = '<p>抱歉，生成结果时遇到技术问题。请尝试重新作答。</p>';
+                }
+                
+                // 测试完成提示已整合到置信度评估中，不再单独显示
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            
+            function generateInconsistencyWarnings(inconsistencies) {
+                const container = elements.inconsistencyWarnings;
+                if (!container) return;
+                
+                if (inconsistencies.length === 0) {
+                    container.innerHTML = '';
+                    return;
+                }
+                
+                let html = '<div style="margin-bottom: 20px;">';
+                
+                inconsistencies.forEach((inc, index) => {
+                    html += `
+                        <div class="inconsistency-warning">
+                            <strong style="color: var(--accent);">特征组合 ${String.fromCharCode(65 + index)}</strong>
+                            <div style="margin-top: 10px; color: var(--ink);">
+                                ${inc.message}
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.85rem; color: var(--ink-faint);">
+                                相关维度：${inc.dimensions.filter(d => ATTRIBUTES[d]).map(d => `<span style="color: ${ATTRIBUTES[d].color}">${CHINESE_NAMES[d]}</span>`).join('、')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            }
+            
+            function renderScoreCards(scores) {
+                const container = elements.scoresContainer;
+                if (!container) return;
+                
+                container.innerHTML = '';
+                
+                const sortedDimensions = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+                
+                sortedDimensions.forEach(dim => {
+                    const attr = ATTRIBUTES[dim];
+                    const score = scores[dim];
+                    
+                    const card = document.createElement('div');
+                    card.className = 'score-card';
+                    if (card.style && card.style.setProperty) {
+                        card.style.setProperty('--dim-color', attr.color);
+                    }
+                    card.innerHTML = `
+                        <div style="color: ${attr.color}; font-weight: bold; margin-bottom: 10px;">
+                            ${attr.icon} ${CHINESE_NAMES[dim]}
+                        </div>
+                        <div class="score-value" style="color: ${attr.color}">
+                            ${score}
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: ${score}%; background: ${attr.color}"></div>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--ink-soft); margin-top: 8px;">
+                            ${getScoreDescription(score)}倾向
+                        </div>
+                    `;
+                    
+                    container.appendChild(card);
+                });
+            }
+            
+            function renderRadarChart(scores) {
+                const container = elements.radarChartContainer;
+                if (!container) return;
+                
+                const canvas = container.querySelector('canvas');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                // retina/高 DPI 屏：画布按设备像素比放大，CSS 尺寸固定，否则文字和线条发虚
+                const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+                const cssSize = 280;
+                canvas.width = cssSize * dpr;
+                canvas.height = cssSize * dpr;
+                canvas.style.width = cssSize + 'px';
+                canvas.style.height = cssSize + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                const centerX = cssSize / 2;
+                const centerY = cssSize / 2;
+                const radius = cssSize / 2 - 40;
+                
+                const dimensions = ['D', 'sub', 'S', 'M', 'SW', 'BR'];
+                const numPoints = dimensions.length;
+                const angleStep = (Math.PI * 2) / numPoints;
+                
+                // 清空画布（setTransform 后 clearRect 使用 CSS 尺寸坐标）
+                ctx.clearRect(0, 0, cssSize, cssSize);
+                
+                // 绘制背景网格
+                for (let level = 1; level <= 5; level++) {
+                    const levelRadius = (radius / 5) * level;
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#e8e3d9'; // = --rule-soft；canvas 不支持 var()
+                    ctx.lineWidth = 1;
+                    
+                    for (let i = 0; i <= numPoints; i++) {
+                        const angle = angleStep * i - Math.PI / 2;
+                        const x = centerX + Math.cos(angle) * levelRadius;
+                        const y = centerY + Math.sin(angle) * levelRadius;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                
+                // 绘制轴线
+                dimensions.forEach((dim, i) => {
+                    const angle = angleStep * i - Math.PI / 2;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#ddd7cb'; // = --rule
+                    ctx.lineWidth = 1;
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    
+                    // 绘制标签
+                    const labelRadius = radius + 20;
+                    const labelX = centerX + Math.cos(angle) * labelRadius;
+                    const labelY = centerY + Math.sin(angle) * labelRadius;
+                    
+                    ctx.fillStyle = ATTRIBUTES[dim].color || '#8e8677';
+                    ctx.font = '500 13px Georgia, serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(dim, labelX, labelY);
+                });
+                
+                // 绘制数据区域
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(140, 58, 47, 0.14)';
+                ctx.strokeStyle = '#8c3a2f'; // = --accent
+                ctx.lineWidth = 2;
+                
+                dimensions.forEach((dim, i) => {
+                    const score = scores[dim] || 0;
+                    const valueRadius = (score / 100) * radius;
+                    const angle = angleStep * i - Math.PI / 2;
+                    const x = centerX + Math.cos(angle) * valueRadius;
+                    const y = centerY + Math.sin(angle) * valueRadius;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // 绘制数据点
+                dimensions.forEach((dim, i) => {
+                    const score = scores[dim] || 0;
+                    const valueRadius = (score / 100) * radius;
+                    const angle = angleStep * i - Math.PI / 2;
+                    const x = centerX + Math.cos(angle) * valueRadius;
+                    const y = centerY + Math.sin(angle) * valueRadius;
+                    
+                    ctx.beginPath();
+                    ctx.fillStyle = ATTRIBUTES[dim].color || '#8c3a2f';
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+            
+            /**
+             * 类型概括：把 D/sub 主轴与 S/M 强度轴压缩为一个词。
+             * 借鉴 BDSMTest.org 的「标签第一印象」体验——用户需要一个能带走的词，
+             * 而不是六个孤立的分数。
+             */
+            function getTypeProfile(scores) {
+                const D = scores.D || 0, sub = scores.sub || 0;
+                const S = scores.S || 0, M = scores.M || 0;
+                const strengthNote =
+                    S >= 55 && M >= 55 ? '同时，您对给予与接收强度刺激都有明显兴趣。' :
+                    S >= 55 ? '同时，您偏好给予强度刺激的互动。' :
+                    M >= 55 ? '同时，您对接收强度刺激有明显兴趣。' : '';
+
+                if (D >= 55 && sub >= 55) {
+                    return {
+                        label: '双向切换型', en: 'Switch',  // 圈内通用词
+                        desc: '您既能主导也能交出控制权，具体角色更多取决于关系对象与情境，' +
+                              '而非固定立场。' + strengthNote
+                    };
+                }
+                if (D >= 55) {
+                    return {
+                        label: '主导型', en: 'Dominant',
+                        desc: '您更靠近主导端——倾向于制定规则、引导节奏、承担责任。' + strengthNote
+                    };
+                }
+                if (sub >= 55) {
+                    return {
+                        label: '臣服型', en: 'sub',
+                        desc: '您更靠近臣服端——在信任的关系中交出控制权会让您感到安心。' + strengthNote
+                    };
+                }
+                if (Math.max(D, sub) < 40 && Math.max(S, M) < 40) {
+                    return {
+                        label: '温和传统型', en: 'Vanilla',
+                        desc: '您的整体得分偏向均衡温和，更偏好平等、直接的亲密关系模式。'
+                    };
+                }
+                return {
+                    label: '均衡探索型', en: '',  // 圈内无通用对应词，不显示英文行
+                    desc: '您在各个维度上都没有压倒性倾向，保持开放与弹性，' +
+                          '具体偏好可能在具体关系中逐渐清晰。' + strengthNote
+                };
+            }
+            
+            function generateCoreFindings(scores) {
+                const container = elements.coreFindings;
+                if (!container) return;
+                
+                const dimensionKeys = Object.keys(scores);
+                const sortedDimensions = [...dimensionKeys].sort((a, b) => scores[b] - scores[a]);
+                const primaryDim = sortedDimensions[0];
+                const primaryScore = scores[primaryDim];
+                const primaryAttr = ATTRIBUTES[primaryDim];
+                
+                const secondaryDim = sortedDimensions[1];
+                const secondaryScore = scores[secondaryDim];
+                const secondaryAttr = ATTRIBUTES[secondaryDim];
+                
+                const scoreValues = dimensionKeys.map(dim => scores[dim]);
+                const avgScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
+                const maxScore = Math.max(...scoreValues);
+                const isVanilla = avgScore < 35 && maxScore < 50;
+                
+                const bratAnalysis = analyzeBRConsistency(scores);
+                const answerInsights = analyzeAnswerPatterns();
+                
+                // 双高组合判定：前两维都强且分差小，单独描述这种组合
+                // （Switch 的 D+sub、双向强度的 S+M 是最有信息量的结果，不能只报第一名）
+                const dualPairs = { D: 'sub', sub: 'D', S: 'M', M: 'S' };
+                let comboHtml = '';
+                let isDualCombo = false;
+                if (secondaryDim && scores[primaryDim] >= 70 && secondaryScore >= 70
+                    && (primaryScore - secondaryScore) <= 15) {
+                    if (dualPairs[primaryDim] === secondaryDim) {
+                        isDualCombo = true;
+                        comboHtml = primaryDim === 'D' || primaryDim === 'sub'
+                            ? '您的支配与臣服倾向同样突出——这是典型的 Switch（双向角色）特质。您既能主导也能交出控制权，具体角色更多取决于关系对象与当下情境，而非固定立场。'
+                            : '您对给予与接收强度刺激的兴趣同样突出——这是一种双向强度特质。这类组合对沟通与安全的要求更高，请与伴侣充分确认边界、安全词与停止机制。';
+                    }
+                }
+                
+                let secondaryHtml = '';
+                if (!isDualCombo && secondaryDim && secondaryScore > 50) {
+                    const gap = primaryScore - secondaryScore;
+                    const gapDesc = gap <= 10 ? '得分接近主要倾向' : '得分也较高';
+                    secondaryHtml = `
+                        <div class="insight-item">
+                            <strong>次要倾向：</strong>
+                            <span style="color: ${secondaryAttr.color}; font-weight: bold">
+                                ${secondaryAttr.icon} ${CHINESE_NAMES[secondaryDim]}
+                            </span>
+                            <div style="margin-top: 10px;">
+                                您在 <strong style="color: ${secondaryAttr.color}">${CHINESE_NAMES[secondaryDim]}</strong> 
+                                维度${gapDesc}（${secondaryScore}分），这可能意味着您的关系风格更加多元和丰富。
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                const profile = getTypeProfile(scores);
+                
+                let html = `
+                    <div class="type-profile">
+                        <div class="type-profile-label">${profile.label}</div>
+                        ${profile.en ? `<div class="type-profile-en">${profile.en}</div>` : ''}
+                        <div class="type-profile-desc">${profile.desc}</div>
+                    </div>
+                    <h3 style="margin-bottom: 24px;">核心发现</h3>
+                    <div class="insight-item">
+                        <strong>主要倾向：</strong>
+                        <span style="color: ${ATTRIBUTES[primaryDim]?.color || '#8e8677'}; font-weight: bold">
+                            ${ATTRIBUTES[primaryDim]?.icon || '?'} ${CHINESE_NAMES[primaryDim] || primaryDim}
+                        </span>
+                        <div style="margin-top: 10px;">
+                            ${primaryScore > 0
+                                ? `<strong style="color: ${ATTRIBUTES[primaryDim]?.color || '#8e8677'}">${CHINESE_NAMES[primaryDim] || primaryDim}</strong> 
+                                   维度得分最高（${primaryScore}分），表明您具有${getScoreDescription(primaryScore)}的${ATTRIBUTES[primaryDim]?.description || ''}。`
+                                : '您各维度得分均较低，整体倾向不明显，可能更偏好传统平等的关系模式。'
+                            }
+                        </div>
+                    </div>
+                    ${comboHtml ? `
+                    <div class="insight-item" style="border-left-color: var(--accent);">
+                        <strong>双向组合特征：</strong>
+                        <div style="margin-top: 10px;">${comboHtml}</div>
+                    </div>
+                    ` : ''}
+                    ${secondaryHtml}
+                `;
+                
+                if (bratAnalysis) {
+                    html += `
+                        <div class="insight-item" style="background: rgba(150, 112, 42, 0.07); border-left-color: ${ATTRIBUTES.BR.color}">
+                            <strong>BRAT 倾向分析</strong>
+                            <div style="margin-top: 10px;">
+                                ${bratAnalysis}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (isVanilla) {
+                    html += `
+                        <div class="insight-item" style="background: var(--paper-sunken); border-left-color: #9c27b0;">
+                            <strong>传统关系倾向</strong>
+                            <div style="margin-top: 10px;">
+                                您的整体得分偏向均衡，表明您可能更偏好传统、平等的亲密关系模式。
+                                这是常见且健康的关系倾向，注重情感的深度连接和相互尊重。
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 添加基于具体答题模式的个性化分析
+                const insightKeys = Object.keys(answerInsights);
+                if (insightKeys.length > 0) {
+                    html += `
+                        <div class="insight-item" style="background: var(--paper-sunken); border-left-color: var(--accent);">
+                            <strong>个性化答题分析</strong>
+                            <div style="margin-top: 10px; display: grid; gap: 10px;">
+                    `;
+                    insightKeys.forEach(function(dim) {
+                        const attr = ATTRIBUTES[dim];
+                        html += `
+                                <div style="padding: 8px 10px; background: var(--paper-sunken); border-radius: 5px; border-left: 3px solid ${attr.color};">
+                                    <strong style="color: ${attr.color};">${CHINESE_NAMES[dim]}：</strong>${answerInsights[dim]}
+                                </div>
+                        `;
+                    });
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="insight-item" style="background: var(--paper-sunken);">
+                        <strong>作答质量参考</strong>
+                        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            <div>
+                                <div style="font-size: 0.9rem; color: var(--ink-faint);">作答档位</div>
+                                <div style="font-weight: bold;" id="distResult">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9rem; color: var(--ink-faint);">作答节奏</div>
+                                <div style="font-weight: bold;" id="timeResult">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9rem; color: var(--ink-faint);">一致性</div>
+                                <div style="font-weight: bold;" id="consistResult">--</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+                
+                // Populate confidence fields after render
+                const reliability = calculateTestReliability();
+                const distEl = document.getElementById('distResult');
+                const timeEl = document.getElementById('timeResult');
+                const consistEl = document.getElementById('consistResult');
+                
+                if (distEl) {
+                    const distFactor = reliability.factors.find(f => f.includes('作答档位') || f.includes('档位'));
+                    distEl.textContent = distFactor || '正常';
+                    distEl.style.color = reliability.factors.some(f => f.includes('直线') || f.includes('敷衍') || f.includes('偏少')) ? 'var(--s-color)' : 'var(--m-color)';
+                }
+                if (timeEl) {
+                    const timeFactor = reliability.factors.find(f => f.includes('作答节奏') || f.includes('节奏'));
+                    timeEl.textContent = timeFactor || '正常';
+                    timeEl.style.color = reliability.factors.some(f => f.includes('较快') || f.includes('较久')) ? 'var(--br-color)' : 'var(--m-color)';
+                }
+                if (consistEl) {
+                    const consistFactor = reliability.factors.find(f => f.includes('反向题') || f.includes('一致'));
+                    consistEl.textContent = consistFactor || '良好';
+                    consistEl.style.color = reliability.factors.some(f => f.includes('较多')) ? 'var(--s-color)' : 'var(--m-color)';
+                }
+            }
+            
+            function analyzeBRConsistency(scores) {
+                const brScore = scores.BR || 0;
+                const dScore = scores.D || 0;
+                const sScore = scores.S || 0;
+                
+                if (brScore < 30 && (dScore > 60 || sScore > 60)) {
+                    return "您的BR倾向较低，但支配/施虐倾向较高。这表明您更倾向于通过规则和控制来互动，而非通过调皮行为。";
+                }
+                
+                if (brScore > 60 && (dScore > 60 || sScore > 60)) {
+                    return "您的BR倾向和支配/施虐倾向都较高。这表明您既享受调皮互动的趣味，也具备掌控局面的能力。";
+                }
+                
+                if (brScore > 60 && dScore < 40 && sScore < 40) {
+                    return "您的BR倾向较高，但支配/施虐倾向较低。这表明您更倾向于通过趣味和调皮来建立关系，而非通过权力动态。";
+                }
+                
+                return "";
+            }
+            
+            function analyzeAnswerPatterns() {
+                const answers = state.userAnswers;
+                const questions = state.questions;
+                if (!questions || !answers) return {};
+
+                const dimScores = {};
+                questions.forEach(function(q) {
+                    const ci = answers[q.id];
+                    if (ci === undefined || ci === null) return;
+                    const dim = q.measures[0];
+                    let score = (q.choices[ci] && q.choices[ci].scores) ? (q.choices[ci].scores[dim] || 0) : 0;
+                    // 反向题需与 calculateScores 保持同一口径，否则分组判断会失真
+                    if (q.reverse) {
+                        score = (q.choices.length - 1) - score;
+                    }
+                    if (!dimScores[dim]) dimScores[dim] = {};
+                    dimScores[dim][q.id] = { score: score, text: q.text, choiceText: q.choices[ci].text };
+                });
+
+                const insights = {};
+
+                if (dimScores.D) {
+                    var d = dimScores.D;
+                    var dBehavior = ((d[1]?d[1].score:0)+(d[4]?d[4].score:0)+(d[5]?d[5].score:0))/3;
+                    var dPsych = ((d[2]?d[2].score:0)+(d[3]?d[3].score:0)+(d[6]?d[6].score:0)+(d[7]?d[7].score:0)+(d[8]?d[8].score:0))/5;
+                    var dFantasy = (d[8]?d[8].score:0);
+                    var dControl = ((d[6]?d[6].score:0)+(d[7]?d[7].score:0))/2;
+                    if (dFantasy >= 3 && dBehavior < 2) {
+                        insights.D = '您是幻想型支配者——内心有强烈的掌控渴望和掌控幻想，但实际行为中较少展现。您可能在等待合适的时机或伴侣来释放这种倾向。';
+                    } else if (dBehavior >= 3 && dFantasy < 2) {
+                        insights.D = '您是实践型支配者——您在行为中经常主导，但并非出于强烈的内在幻想。您可能更多是出于习惯或责任在主导。';
+                    } else if (dControl >= 3 && dBehavior < 2) {
+                        insights.D = '您渴望控制权但行为克制——面对拒绝时会有挫折感，但您能很好地控制自己的表现。';
+                    } else if (dBehavior >= 3 && dPsych >= 3) {
+                        insights.D = '您的支配倾向内外一致——既有强烈的心理渴望，也在行为中充分展现。您对自己的支配需求有清晰的认知。';
+                    } else if (dBehavior < 2 && dPsych < 2) {
+                        insights.D = '您对支配的兴趣很低——无论行为还是心理层面，您都更偏好平等或跟随的关系模式。';
+                    } else {
+                        insights.D = '您有一定的支配倾向，但强度中等——您能在需要时站出来，但不强求控制权。';
+                    }
+                }
+
+                if (dimScores.sub) {
+                    var s = dimScores.sub;
+                    var sEmotional = ((s[9]?s[9].score:0)+(s[12]?s[12].score:0)+(s[13]?s[13].score:0)+(s[15]?s[15].score:0))/4;
+                    var sBehavioral = ((s[11]?s[11].score:0)+(s[14]?s[14].score:0)+(s[16]?s[16].score:0))/3;
+                    var sFantasy = (s[14]?s[14].score:0);
+                    if (sEmotional >= 3 && sBehavioral < 2) {
+                        insights.sub = '您是情感型臣服者——您渴望交出控制权带来的安心感和情感释放，但实际行为中较少展现服从。您可能还没有遇到让您愿意完全信任的人。';
+                    } else if (sBehavioral >= 3 && sEmotional < 2) {
+                        insights.sub = '您是行为型臣服者——您在行为上经常服从，但内心并非真正渴望情感释放。您可能更多是出于迁就或习惯。';
+                    } else if (sFantasy >= 3 && sBehavioral < 2) {
+                        insights.sub = '您有丰富的臣服幻想但很少实践——完全服从的场景对您很有吸引力，但现实中您保持着自主。';
+                    } else if (sEmotional >= 3 && sBehavioral >= 3) {
+                        insights.sub = '您的臣服倾向内外一致——既享受情感释放，也在行为中展现服从。您对自己的臣服需求有清晰的认知。';
+                    } else if (sEmotional < 2 && sBehavioral < 2) {
+                        insights.sub = '您对臣服的兴趣很低——您更偏好保持自主和独立，不倾向于交出控制权。';
+                    } else {
+                        insights.sub = '您有一定的臣服倾向，但强度中等——您能在信任的人面前放松，但不会轻易交出控制权。';
+                    }
+                }
+
+                if (dimScores.S) {
+                    var sS = dimScores.S;
+                    var sPhysical = ((sS[17]?sS[17].score:0)+(sS[18]?sS[18].score:0)+(sS[21]?sS[21].score:0))/3;
+                    var sPsychological = ((sS[19]?sS[19].score:0)+(sS[20]?sS[20].score:0)+(sS[22]?sS[22].score:0)+(sS[23]?sS[23].score:0)+(sS[24]?sS[24].score:0))/5;
+                    var sObservation = (sS[23]?sS[23].score:0);
+                    if (sPsychological >= 3 && sPhysical < 2) {
+                        insights.S = '您是心理型施虐者——您对纯身体刺激的兴趣不高，但对下达指令、感官剥夺、语言控制和观察反应有较强兴趣。您更偏好心理层面的施虐方式。';
+                    } else if (sPhysical >= 3 && sPsychological < 2) {
+                        insights.S = '您是身体型施虐者——您享受施加疼痛和束缚的身体刺激，但对深层的心理控制兴趣不大。';
+                    } else if (sObservation >= 3 && sPhysical < 2) {
+                        insights.S = '您特别享受观察伴侣的反应——对方的声音、表情和身体变化是您最大的快感来源。';
+                    } else if (sPhysical >= 3 && sPsychological >= 3) {
+                        insights.S = '您对施虐有全面的兴趣——既享受身体层面的刺激（疼痛、束缚），也享受心理层面的控制（指令、语言）。';
+                    } else if (sPhysical < 2 && sPsychological < 2) {
+                        insights.S = '您对施虐的兴趣很低——您更偏好温和的互动方式。';
+                    } else {
+                        insights.S = '您对施虐有适度兴趣——在安全和信任的前提下愿意探索。';
+                    }
+                }
+
+                if (dimScores.M) {
+                    var mM = dimScores.M;
+                    var mPhysical = ((mM[25]?mM[25].score:0)+(mM[26]?mM[26].score:0)+(mM[28]?mM[28].score:0))/3;
+                    var mPsychological = ((mM[27]?mM[27].score:0)+(mM[29]?mM[29].score:0)+(mM[30]?mM[30].score:0)+(mM[31]?mM[31].score:0)+(mM[32]?mM[32].score:0))/5;
+                    var mHumiliation = (mM[29]?mM[29].score:0);
+                    if (mPsychological >= 3 && mPhysical < 2) {
+                        insights.M = '您是心理型受虐者——您对纯身体刺激的兴趣不高，但对感官剥夺、语言羞辱和情感转化有较强渴望。您更偏好心理层面的受虐体验。';
+                    } else if (mPhysical >= 3 && mPsychological < 2) {
+                        insights.M = '您是身体型受虐者——您享受接收疼痛、束缚和身体挑战的刺激，但对深层的心理转化兴趣不大。';
+                    } else if (mHumiliation >= 3 && mPhysical < 2) {
+                        insights.M = '您特别享受语言羞辱带来的臣服感——被贬低是您确认自己被支配位置的核心方式。';
+                    } else if (mPhysical >= 3 && mPsychological >= 3) {
+                        insights.M = '您对受虐有全面的兴趣——既享受身体层面的体验（疼痛、束缚、挑战），也追求心理层面的转化（感官剥夺、语言羞辱）。';
+                    } else if (mPhysical < 2 && mPsychological < 2) {
+                        insights.M = '您对受虐的兴趣很低——您更偏好温和的身体互动。';
+                    } else {
+                        insights.M = '您对受虐有适度兴趣——在安全和信任的前提下愿意探索。';
+                    }
+                }
+
+                if (dimScores.SW) {
+                    var sw = dimScores.SW;
+                    var swTotal = 0, swCount = 0;
+                    Object.keys(sw).forEach(function(k) { swTotal += sw[k].score; swCount++; });
+                    var swAvg = swCount > 0 ? swTotal / swCount : 0;
+                    if (swAvg >= 3) {
+                        insights.SW = '您具有高度的角色灵活性——在不同关系和情境中能自然切换角色。这让您能适应更多类型的伴侣。';
+                    } else if (swAvg >= 2) {
+                        insights.SW = '您有一定的角色灵活性，但更偏好某些固定模式——您在舒适区内灵活，超出范围会感到不适。';
+                    } else {
+                        insights.SW = '您偏好固定的角色定位——您清楚自己想要什么，不倾向于频繁切换。这种明确性也是一种优势。';
+                    }
+                }
+
+                if (dimScores.BR) {
+                    var br = dimScores.BR;
+                    var brTotal = 0, brCount = 0;
+                    Object.keys(br).forEach(function(k) { brTotal += br[k].score; brCount++; });
+                    var brAvg = brCount > 0 ? brTotal / brCount : 0;
+                    if (brAvg >= 3) {
+                        insights.BR = '调皮是您的核心互动风格——您通过挑衅和玩笑来表达亲近，享受互动中的张力和趣味。';
+                    } else if (brAvg >= 2) {
+                        insights.BR = '您偶尔会调皮一下来增加趣味，但不会过度——您知道何时该认真，何时可以放松。';
+                    } else {
+                        insights.BR = '您偏好直接和认真的互动方式——调皮不是您的风格，您更看重真诚的沟通。';
+                    }
+                }
+
+                return insights;
+            }
+            
+            function generateDimensionDetails(scores) {
+                const container = elements.dimensionDetails;
+                if (!container) return;
+                
+                const sortedDims = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+                const answerInsights = analyzeAnswerPatterns();
+                
+                let html = '<div style="display: grid; gap: 15px;">';
+                
+                sortedDims.forEach(dim => {
+                    const attr = ATTRIBUTES[dim];
+                    const score = scores[dim];
+                    const description = getDimensionDetailDescription(dim, score);
+                    const insight = answerInsights[dim] || '';
+                    
+                    html += `
+                        <div class="detail-card" style="border-left-color: ${attr.color}">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: ${attr.color}; font-size: 1.1rem;">
+                                        ${attr.icon} ${CHINESE_NAMES[dim]}
+                                    </strong>
+                                    <div class="dim-def">${attr.fullDesc}</div>
+                                    <div style="font-size: 0.9rem; color: var(--ink-soft); margin-top: 5px;">
+                                        ${getScoreDescription(score)}倾向
+                                    </div>
+                                </div>
+                                <div style="font-size: 2rem; font-weight: bold; color: ${attr.color}">
+                                    ${score}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <div style="width: 100%; height: 6px; background: var(--rule-soft); border-radius: 3px; overflow: hidden;">
+                                    <div style="width: ${score}%; height: 100%; background: ${attr.color}; border-radius: 3px;"></div>
+                                </div>
+                            </div>
+                            
+                            <div style="color: var(--ink); line-height: 1.6;">
+                                ${description}
+                            </div>
+                            
+                            ${insight ? `
+                            <div style="margin-top: 12px; padding: 10px 12px; background: var(--accent-tint); border-radius: 6px; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; border-left: 3px solid ${attr.color};">
+                                <strong>答题特征分析：</strong>${insight}
+                            </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 15px; font-size: 0.9rem; color: var(--ink-soft);">
+                                <strong>具体表现：</strong> ${getDimensionBehaviorExamples(dim, score)}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            }
+            
+            function generateCompatibilityAnalysis(scores, primaryDim) {
+                const container = elements.compatibilityAnalysis;
+                if (!container) return;
+                
+                const primaryAttr = ATTRIBUTES[primaryDim];
+                
+                let html = '<div style="display: grid; gap: 15px;">';
+                
+                if (primaryDim === 'BR') {
+                    html += `
+                        <div class="insight-item">
+                            <strong>主要兼容模式</strong>
+                            <div style="margin-top: 10px;">
+                                作为 <strong style="color: ${primaryAttr.color}">${CHINESE_NAMES[primaryDim]}</strong>，
+                                您通常与有耐心且经验丰富的 <strong style="color: ${ATTRIBUTES.D.color}">${CHINESE_NAMES.D}</strong>
+                                形成良好的互动动态，他们能理解并享受您的调皮行为。
+                            </div>
+                        </div>
+                    `;
+                } else if (primaryAttr.opposite) {
+                    const oppositeDim = primaryAttr.opposite;
+                    html += `
+                        <div class="insight-item">
+                            <strong>主要兼容模式</strong>
+                            <div style="margin-top: 10px;">
+                                您的 <strong style="color: ${primaryAttr.color}">${CHINESE_NAMES[primaryDim]}</strong> 
+                                倾向与 <strong style="color: ${ATTRIBUTES[oppositeDim].color}">${CHINESE_NAMES[oppositeDim]}</strong>
+                                倾向形成互补的动态，这在许多关系中能创造出良好的平衡。
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="insight-item">
+                            <strong>主要兼容模式</strong>
+                            <div style="margin-top: 10px;">
+                                基于您的 <strong style="color: ${primaryAttr.color}">${CHINESE_NAMES[primaryDim]}</strong> 
+                                倾向，您需要寻找能够理解和尊重这种特质的伴侣。
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="insight-item">
+                        <strong>潜在挑战</strong>
+                        <div style="margin-top: 10px;">
+                            ${getCompatibilityChallenges(primaryDim)}
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <strong>关系动态建议</strong>
+                        <div style="margin-top: 10px;">
+                            ${getDynamicSuggestions(primaryDim)}
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            }
+            
+            function generateDevelopmentTips(scores, primaryDim) {
+                const container = elements.developmentTips;
+                if (!container) return;
+                
+                let html = '<div style="display: grid; gap: 15px;">';
+                
+                html += `
+                    <div class="insight-item">
+                        <strong>优势与建议</strong>
+                        <div style="margin-top: 10px;">
+                            ${getStrengthDevelopmentTips(primaryDim)}
+                        </div>
+                    </div>
+                `;
+                
+                html += `
+                    <div class="insight-item">
+                        <strong>自我探索路径</strong>
+                        <div style="margin-top: 10px;">
+                            ${getSelfExplorationPath(primaryDim)}
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            }
+            
+            function generateCommunicationGuide(scores, primaryDim) {
+                const container = elements.communicationGuide;
+                if (!container) return;
+                
+                const hasPainTendency = scores.S > 40 || scores.M > 40;
+                
+                let html = '<div style="display: grid; gap: 15px;">';
+                
+                html += `
+                    <div class="insight-item" style="background: var(--paper-sunken);">
+                        <strong>沟通要点</strong>
+                        <div style="margin-top: 10px;">
+                            ${getCommunicationPoints(primaryDim)}
+                        </div>
+                    </div>
+                    <div class="insight-item" style="background: var(--paper-sunken);">
+                        <strong>边界设立</strong>
+                        <div style="margin-top: 10px;">
+                            ${getBoundaryGuidelines(primaryDim)}
+                        </div>
+                    </div>
+                    <div class="insight-item" style="background: var(--paper-sunken);">
+                        <strong>协商与沟通自评清单</strong>
+                        <div style="margin-top: 10px; font-size: 0.85rem; color: var(--ink-faint); line-height: 1.7;">
+                            研究与社区经验一致认为：清晰的沟通协商比倾向本身更能预测实践的体验质量。
+                            以下各项不需要打分，仅供您对照自查——
+                        </div>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>我能清楚说出自己不想尝试的活动，也听得进对方说「不」</li>
+                            <li>我与伴侣约定过明确的停止信号（安全词、手势或物品）</li>
+                            <li>我知道强度活动后的善后安抚是什么，也了解对方需要什么</li>
+                            <li>尝试新强度或新形式之前，我会先与对方确认边界</li>
+                            <li>我了解所涉及活动的基本风险常识（束缚时长、呼吸、循环等）</li>
+                            <li>事后我们有机会复盘彼此的感受，而不只是「都好」</li>
+                        </ul>
+                    </div>
+                `;
+                
+                if (hasPainTendency) {
+                    html += `
+                        <div class="insight-item" style="background: rgba(156, 61, 52, 0.07); border-left-color: #ff4757;">
+                            <strong>疼痛互动安全指南</strong>
+                            <div style="margin-top: 10px;">
+                                <strong>重要安全原则：</strong>
+                                <ul style="margin-top: 10px; padding-left: 20px;">
+                                    <li>所有活动必须建立在安全、理智、知情同意（SSC/RACK原则）基础上</li>
+                                    <li>建立清晰的安全词系统（建议使用"红灯/黄灯/绿灯"）</li>
+                                    <li>活动前后必须进行充分沟通和善后关怀</li>
+                                    <li>从温和强度开始，逐步探索耐受度</li>
+                                    <li>学习基本急救知识和风险规避方法</li>
+                                    <li>定期检查身体和心理状态，建立停止机制</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+            }
+            
+            /**
+             * 作答质量评估（Answer Quality Assessment）
+             *
+             * 重要说明：这不是心理测量学意义上的信度检验。
+             * 本问卷未做过 α 系数、重测信度或因素结构验证，因此不能声称具备科学效度。
+             * 这里评估的仅是「本次作答是否认真」，属于过程性提示，不是结果可靠性证明。
+             */
+            function calculateTestReliability() {
+                const answers = state.userAnswers;
+                const questions = state.questions;
+                if (!answers || !questions || Object.keys(answers).length < questions.length) {
+                    return { level: 'low', score: 30, factors: ['未完成所有题目'] };
+                }
+                
+                let score = 55; // 基线：完整作答本身即视为基本有效
+                const factors = [];
+                
+                // 指标 1：直线作答检测（真正的低质量信号）
+                // 只有当几乎全部题目选了同一档选项时，才视为敷衍作答。
+                // 注意：答案「集中」本身不是问题——人格特质突出的人本就会给出集中答案。
+                const choiceCounts = {};
+                Object.values(answers).forEach(choiceIndex => {
+                    choiceCounts[choiceIndex] = (choiceCounts[choiceIndex] || 0) + 1;
+                });
+                const distinctChoices = Object.keys(choiceCounts).length;
+                const maxChoiceRatio = Math.max(...Object.values(choiceCounts)) / questions.length;
+                
+                if (distinctChoices === 1) {
+                    // 全部题目选同一档位：真正的直线作答信号
+                    factors.push('全部题目选择了同一档位，属于直线作答');
+                    score -= 30;
+                } else if (distinctChoices === 2) {
+                    // 两个档位不扣分：特征鲜明的人（正向题高、反向题低）本就只用两档
+                    factors.push('作答档位集中于两端，特征取向鲜明');
+                    score += 4;
+                } else if (distinctChoices === 3) {
+                    factors.push('作答档位有基本区分');
+                    score += 8;
+                } else {
+                    factors.push('作答档位覆盖充分，区分度良好');
+                    score += 12;
+                }
+                
+                // 指标 2：跨维度作答分布
+                // 检查每个维度的平均作答档位是否有极端分化（如全 0 或全 4）
+                const dimAverages = {};
+                questions.forEach(q => {
+                    const ci = answers[q.id];
+                    if (ci === undefined || ci === null) return;
+                    const dim = q.measures[0];
+                    if (!dimAverages[dim]) dimAverages[dim] = { sum: 0, n: 0 };
+                    // 反向题取反后参与分布分析
+                    const val = q.reverse ? (q.choices.length - 1 - ci) : ci;
+                    dimAverages[dim].sum += val;
+                    dimAverages[dim].n += 1;
+                });
+                const extremeDims = Object.keys(dimAverages).filter(dim => {
+                    const { sum, n } = dimAverages[dim];
+                    if (n === 0) return false;
+                    const avg = sum / n;
+                    return avg <= 0.35 || avg >= 3.65;
+                });
+                if (extremeDims.length >= 4) {
+                    factors.push('多个维度出现满分或零分倾向，建议复核这些维度的作答');
+                    score -= 12;
+                } else if (extremeDims.length === Object.keys(dimAverages).length
+                           && Object.keys(dimAverages).length > 0) {
+                    // 全部维度同向极端：要么什么都要，要么什么都不要
+                    factors.push('所有维度同时处于极端水平，缺乏内部区分');
+                    score -= 10;
+                } else {
+                    factors.push('各维度作答梯度自然');
+                    score += 8;
+                }
+                
+                // 指标 3：反向题一致性检测（真实的一致性校验）
+                // 反向题得分与同维度正向题得分若呈反向关系，说明作答是认真的
+                const reverseConsistency = analyzeReverseConsistency();
+                if (reverseConsistency.checked > 0) {
+                    const rc = reverseConsistency;
+                    if (rc.ratio >= 0.8) {
+                        factors.push(`反向题与正向题表现一致（${rc.matched}/${rc.checked}）`);
+                        score += 10;
+                    } else if (rc.conflict > rc.unclear && rc.conflict > 0) {
+                        // 方向性冲突：反向题反而选了高分档
+                        factors.push(`反向题与正向题存在方向冲突（${rc.conflict}/${rc.checked}），建议回顾作答`);
+                        score -= 12;
+                    } else if (rc.unclear > 0) {
+                        // 无区分度：多见于直线作答
+                        factors.push(`作答缺乏区分度，一致性无法评估（${rc.unclear}/${rc.checked} 个维度）`);
+                        score -= 6;
+                    } else {
+                        factors.push(`反向题与正向题大体一致（${rc.matched}/${rc.checked}）`);
+                        score += 0;
+                    }
+                }
+                
+                // 指标 4：作答节奏（仅作温和提示，不做惩罚）
+                const responseTimes = Object.values(state.responseTimes);
+                if (responseTimes.length > 10) {
+                    const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+                    if (avgTime < 1500) {
+                        factors.push('部分题目作答较快');
+                        score -= 18;
+                    } else if (avgTime > 60000) {
+                        factors.push('部分题目停留较久');
+                        score -= 3;
+                    } else {
+                        factors.push('作答节奏自然');
+                        score += 8;
+                    }
+                }
+                
+                score = Math.max(0, Math.min(100, score));
+                
+                let level = '低';
+                if (score >= 70) level = '高';
+                else if (score >= 50) level = '中';
+                
+                return { level, score, factors };
+            }
+            
+            /**
+             * 反向题一致性检测
+             * 对每个含反向题的维度：比较该维度反向题得分与正向题得分。
+             * 若反向题原始作答档位高（即倾向于选「不会/没有」）而正向题得分低，
+             * 说明两者指向同一构念方向，作答逻辑一致。
+             */
+            function analyzeReverseConsistency() {
+                const answers = state.userAnswers;
+                const questions = state.questions;
+                if (!answers || !questions) return { checked: 0, matched: 0, conflict: 0, unclear: 0, ratio: 0 };
+                
+                const dimsWithReverse = {};
+                questions.forEach(q => {
+                    if (q.reverse && q.measures && q.measures[0]) {
+                        dimsWithReverse[q.measures[0]] = true;
+                    }
+                });
+                
+                let checked = 0;
+                let matched = 0;
+                let conflict = 0;
+                let unclear = 0;
+                
+                Object.keys(dimsWithReverse).forEach(dim => {
+                    const dimQs = questions.filter(q => q.measures && q.measures[0] === dim);
+                    let reverseSum = 0, reverseN = 0;
+                    let forwardSum = 0, forwardN = 0;
+                    dimQs.forEach(q => {
+                        const ci = answers[q.id];
+                        if (ci === undefined || ci === null) return;
+                        if (q.reverse) {
+                            reverseSum += ci;
+                            reverseN += 1;
+                        } else {
+                            forwardSum += ci;
+                            forwardN += 1;
+                        }
+                    });
+                    if (reverseN === 0 || forwardN === 0) return;
+                    
+                    checked += 1;
+                    const reverseAvg = reverseSum / reverseN;
+                    const forwardAvg = forwardSum / forwardN;
+
+                    // 直线作答优先判为无法评估：若该维度所有题（含正反向）都选同一档，
+                    // 正反向同高只是「全选同一档」的副产物，不是真实的方向矛盾。
+                    // 这类作答已在「直线作答」指标中扣分，不应再重复报冲突（误导用户）。
+                    const allSame = dimQs.every(q => {
+                        const ci = answers[q.id];
+                        return ci === answers[dimQs[0].id];
+                    });
+                    if (allSame) {
+                        unclear += 1;
+                        return;
+                    }
+                    
+                    // 四种情形（ci 语义：正向 ci 越大越享受，反向 ci 越大越不安）：
+                    // 1) 高倾向一致：享受(正向高) 且 不会不安(反向低)
+                    // 2) 低倾向一致：不享受(正向低) 且 会不安(反向高)
+                    //    —— 1 与 2 都是自洽作答，绝不能把 2 误判为冲突
+                    // 3) 冲突：既享受(正向高) 又会不安(反向高)，方向自相矛盾
+                    // 4) 无法评估：双低或居中（如直线作答），没有区分度
+                    const highF = forwardAvg >= 2.5;
+                    const lowF = forwardAvg <= 1.5;
+                    const highR = reverseAvg >= 2.5;
+                    const lowR = reverseAvg <= 1.5;
+                    
+                    if (highF && lowR) {
+                        matched += 1;
+                    } else if (lowF && highR) {
+                        matched += 1; // 低倾向一致
+                    } else if (highF && highR) {
+                        conflict += 1;
+                    } else {
+                        unclear += 1;
+                    }
+                });
+                
+                return {
+                    checked,
+                    matched,
+                    conflict,
+                    unclear,
+                    ratio: checked > 0 ? matched / checked : 0
+                };
+            }
+            
+            function generateTestScienceInfo(scores) {
+                const container = elements.testScience;
+                if (!container) return;
+                
+                const totalAnswered = state.answeredCount;
+                const totalQuestions = state.questions.length;
+                const completionRate = Math.round((totalAnswered / totalQuestions) * 100);
+                const reliability = calculateTestReliability();
+                const reliabilityColor = reliability.level === '高' ? 'var(--m-color)' : (reliability.level === '中' ? 'var(--br-color)' : 'var(--s-color)');
+                const reliabilityText = reliability.level === '高' ? '高' : (reliability.level === '中' ? '中等' : '较低');
+                const confidencePercent = reliability.score;
+                
+                const html = `
+                    <div style="display: grid; gap: 15px;">
+                        <div class="insight-item" style="background: var(--paper-sunken);">
+                            <strong>作答质量参考</strong>
+                            <div style="margin-top: 10px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                                    <div>
+                                        <div style="font-size: 0.9rem; color: var(--ink-faint);">综合评分</div>
+                                        <div style="font-weight: bold; color: ${reliabilityColor}">${confidencePercent}%</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.9rem; color: var(--ink-faint);">作答状态</div>
+                                        <div style="font-weight: bold; color: ${reliabilityColor}">${reliabilityText}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.9rem; color: var(--ink-faint);">参考项</div>
+                                        <div style="font-weight: bold; color: var(--ink)">${reliability.factors.length} 项</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; padding: 10px; background: var(--paper-sunken); border-radius: 0;">
+                                    <div style="font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 6px;">参考依据：</div>
+                                    <ul style="font-size: 0.8rem; color: var(--ink-faint); padding-left: 16px; margin: 0;">
+                                        ${reliability.factors.map(f => `<li>${f}</li>`).join('')}
+                                    </ul>
+                                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule-soft); font-size: 0.75rem; color: var(--ink-faint);">
+                                        <strong style="color: var(--ink-soft);">这是什么：</strong>
+                                        仅评估本次作答是否投入（答案分布、作答节奏、反向题一致性），不代表本问卷经过信效度验证。
+                                        它衡量的是「你有没有认真答」，不是「这个结果有多可靠」。
+                                    </div>
+                                </div>
+                                ${reliability.level !== '高' ? `
+                                <div class="test-completion-notice" style="margin-top: 10px; background: rgba(150, 112, 42, 0.06); border-color: rgba(150, 112, 42, 0.28);">
+                                    <strong>注意：</strong>本次作答质量评估为${reliabilityText}。这不影响维度得分的计算，但部分题目可能因作答过快而不够准确。
+                                </div>
+                                ` : `
+                                <div class="test-completion-notice" style="margin-top: 15px;">
+                                    <strong>确认：</strong>您的作答质量评估为${reliabilityText}（${confidencePercent}%），结果可信。
+                                </div>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="insight-item" style="background: var(--paper-sunken);">
+                            <strong>局限性说明</strong>
+                            <div style="margin-top: 10px;">
+                                <p>请注意本测试的局限性：</p>
+                                <ul style="margin-top: 10px; padding-left: 20px;">
+                                    <li><strong>自我报告偏差：</strong>结果受测试者自我认知和诚实度影响</li>
+                                    <li><strong>情境依赖性：</strong>倾向可能随伴侣、情境、情绪变化</li>
+                                    <li><strong>文化因素：</strong>未充分考虑文化背景对倾向表达的影响</li>
+                                    <li><strong>动态变化：</strong>个人倾向可能随时间和发展阶段变化</li>
+                                    <li><strong>参考性质：</strong>测试结果仅供参考，不能替代专业心理咨询</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-item" style="background: var(--paper-sunken);">
+                            <strong>使用建议</strong>
+                            <div style="margin-top: 10px;">
+                                <p>如何正确使用测试结果：</p>
+                                <ul style="margin-top: 10px; padding-left: 20px;">
+                                    <li>将结果作为自我探索的起点，而非最终定义</li>
+                                    <li>与伴侣进行开放、诚实的沟通，分享测试发现</li>
+                                    <li>在实际关系中渐进探索，尊重彼此边界</li>
+                                    <li>定期重新评估自己的倾向和需求</li>
+                                    <li>如有困惑或冲突，考虑寻求专业关系咨询</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            }
+            
+            function getScoreDescription(score) {
+                if (score >= 85) return '非常强烈的';
+                if (score >= 70) return '明显的';
+                if (score >= 55) return '中等的';
+                if (score >= 40) return '一定程度的';
+                if (score >= 25) return '轻微的';
+                if (score >= 10) return '极轻微的';
+                return '几乎没有';
+            }
+            
+            function getDimensionDetailDescription(dim, score) {
+                const descriptions = {
+                    D: {
+                        high: '您享受在关系中承担领导责任，制定规则并引导互动方向。这种倾向通常伴随着强烈的责任感和对控制感的需求。您可能从保护、指导和决策中获得满足感。',
+                        medium: '您具有一定的支配倾向，在某些情境下喜欢掌控局面。您能够承担责任，但也重视伴侣的自主性。',
+                        low: '您更偏好平等的关系模式，不刻意寻求控制权。您在关系中注重协商和共同决策。'
+                    },
+                    sub: {
+                        high: '您从交出控制权中获得安全感和满足感。信任的建立对您至关重要，您享受被引导、被照顾和被保护的感觉。臣服对您来说是一种深度连接和情感释放的方式。',
+                        medium: '您在某些情境下愿意交出控制权，享受被引导的感觉。您能够在自主和臣服之间找到平衡。',
+                        low: '您偏好保持自主权，不倾向于交出控制。您在关系中重视平等和相互尊重。'
+                    },
+                    S: {
+                        high: '您对施加疼痛有较高兴趣，并从中获得控制感和观察满足。这种互动建立在双方同意和安全的前提下。您可能享受精确控制疼痛强度和观察对方反应的体验。',
+                        medium: '您对施加疼痛有一定的兴趣，但需要建立在充分信任和安全的基础上。您可能适度探索疼痛给予带来的掌控感。',
+                        low: '您对施加疼痛兴趣不大，更偏好温和的互动方式。'
+                    },
+                    M: {
+                        high: '您从接收疼痛中获得独特的感官体验和情感释放。疼痛对您来说可能转化为愉悦和净化感，这需要建立在充分信任和安全沟通的基础上。',
+                        medium: '您对接收疼痛有一定的接受度，在安全前提下愿意探索身体感受。',
+                        low: '您对疼痛较为敏感，偏好温和的身体互动。'
+                    },
+                    SW: {
+                        high: '您具有高度的灵活性，能够根据伴侣和情境调整角色。这种适应性能让您在不同关系中获得丰富体验。您可能享受理解和扮演不同角色的过程。',
+                        medium: '您具有一定的灵活性，在特定情境下愿意尝试不同角色。',
+                        low: '您偏好固定的角色定位，不倾向于频繁切换。'
+                    },
+                    BR: {
+                        high: '您享受通过调皮和挑战来增加关系的趣味性和互动深度。适度的游戏性能让关系更加生动有趣。您可能从测试边界和引发回应中获得满足感。',
+                        medium: '您喜欢在关系中加入趣味元素，但会注意把握分寸。',
+                        low: '您偏好直接和严肃的沟通方式，不太倾向于游戏性互动。'
+                    }
+                };
+                
+                const level = score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low';
+                return descriptions[dim] ? descriptions[dim][level] : '该维度的倾向不明显。';
+            }
+            
+function getDimensionBehaviorExamples(dim, score) {
+                const examples = {
+                    D: score >= 70 ? '制定规则、掌控全局、承担决策责任' :
+                       score >= 40 ? '偶尔主导、在需要时站出来承担责任' :
+                       '平等协商、尊重伴侣自主性',
+                    sub: score >= 70 ? '服从指令、享受被照顾、交出控制权' :
+                         score >= 40 ? '偶尔服从、接受引导、信任伴侣决策' :
+                         '保持独立、自主参与决策',
+                    S: score >= 70 ? '控制疼痛施加、实施适度刺激、精确掌握节奏' :
+                       score >= 40 ? '温和尝试疼痛给予、关注安全与边界' :
+                       '避免疼痛施加、偏好温和互动',
+                    M: score >= 70 ? '接受疼痛刺激、体验疼痛转化、寻求深度感受' :
+                       score >= 40 ? '适度接受疼痛、安全探索身体感受' :
+                       '偏好温和互动、避免疼痛刺激',
+                    SW: score >= 70 ? '灵活调整角色、适应不同伴侣与情境' :
+                        score >= 40 ? '根据情况调整、尝试不同角色定位' :
+                        '固定角色、有稳定的偏好',
+                    BR: score >= 70 ? '调皮挑战、测试边界、增加互动趣味' :
+                        score >= 40 ? '适度玩笑、轻松互动、偶尔调皮' :
+                        '严肃互动、直接坦诚沟通'
+                };
+                return examples[dim] || '';
+            }
+            
+            function getCompatibilityChallenges(dim) {
+                const challenges = {
+                    D: '与同样具有强烈支配倾向的伴侣可能产生权力冲突。需要学习妥协和轮流主导的艺术。',
+                    sub: '与同样具有强烈臣服倾向的伴侣可能导致责任真空。需要有人愿意承担更多决策责任。',
+                    S: '与对疼痛敏感或不感兴趣的伴侣可能难以满足施虐需求。需要寻找兼容的疼痛耐受度，并确保所有活动都在安全、理智、知情同意的原则下进行。',
+                    M: '与不愿意或不懂得安全给予疼痛刺激的伴侣可能存在安全风险。需要充分沟通和信任建立，确保所有疼痛活动都有明确的安全边界。',
+                    SW: '与偏好固定角色的伴侣可能需要更多沟通来协调角色期待。',
+                    BR: '与不够耐心或不理解Brat行为意图的伴侣可能产生误解。需要明确沟通调皮的本质是寻求关注和互动。'
+                };
+                return challenges[dim] || '需要与伴侣充分沟通彼此的偏好和边界。';
+            }
+            
+            function getDynamicSuggestions(dim) {
+                const suggestions = {
+                    D: '考虑与具有臣服倾向的伴侣建立互补关系，或者在平等关系中协商轮流主导。',
+                    sub: '寻找值得信赖的、负责任的伴侣，建立安全的权力交换关系。',
+                    S: '与具有受虐倾向且疼痛耐受度匹配的伴侣探索安全实践，确保充分沟通和知情同意。',
+                    M: '寻找经验丰富、懂得安全实践的伴侣，从温和开始逐步建立信任和耐受度。',
+                    SW: '明确沟通您的灵活性，根据伴侣类型调整角色，享受多元的关系体验。',
+                    BR: '寻找有耐心、能够理解Brat行为并享受这种互动张力的伴侣。Brat通常与Dominant形成有趣的动态。'
+                };
+                return suggestions[dim] || '根据您的倾向，选择能够理解和尊重您需求的关系模式。';
+            }
+            
+            function getStrengthDevelopmentTips(dim) {
+                const tips = {
+                    D: '1. 学习领导力和决策技巧\n2. 培养责任感和保护意识\n3. 练习清晰的沟通和边界设立\n4. 了解安全实践和风险管理',
+                    sub: '1. 培养信任识别的能力\n2. 学习清晰的边界表达\n3. 练习臣服中的自我关怀\n4. 建立安全信号系统',
+                    S: '1. 学习安全技术和急救知识\n2. 培养观察和共情能力\n3. 练习精确控制和节奏掌握\n4. 了解疼痛生理和心理机制\n5. 掌握安全的疼痛互动实践',
+                    M: '1. 学习身体觉察和自我调节\n2. 培养信任建立和安全沟通能力\n3. 练习安全信号的明确使用\n4. 了解自己的疼痛耐受度和触发点\n5. 学习安全疼痛体验的技巧',
+                    SW: '1. 培养角色切换的灵活性\n2. 学习不同角色的沟通技巧\n3. 练习快速适应和情境觉察\n4. 享受多元体验的丰富性',
+                    BR: '1. 学习趣味性和适度性的平衡\n2. 培养时机把握和分寸感\n3. 练习观察伴侣反应的敏感性\n4. 确保游戏不伤害关系实质'
+                };
+                return `<div style="white-space: pre-line;">${tips[dim] || '继续探索和发展您的核心倾向。'}</div>`;
+            }
+            
+            function getSelfExplorationPath(dim) {
+                const paths = {
+                    D: '1. 反思您的主导动机（保护欲、控制需求、责任感）\n2. 探索不同情境下的主导风格\n3. 学习区分健康主导和过度控制\n4. 记录您的主导体验和感受',
+                    sub: '1. 探索您的臣服需求来源（安全感、信任渴望、释放需求）\n2. 区分心理臣服和情境臣服\n3. 学习在臣服中保持自我完整性\n4. 记录您的臣服体验和情感变化',
+                    S: '1. 理解您的施虐倾向的心理机制\n2. 区分健康施虐和有害行为\n3. 学习技术实施和安全边界\n4. 记录刺激实施的过程和反馈',
+                    M: '1. 探索疼痛转化的生理心理机制\n2. 区分健康受虐和自我伤害\n3. 学习耐受度管理和安全信号\n4. 记录疼痛体验和情感释放过程',
+                    SW: '1. 探索角色切换的触发因素\n2. 理解不同角色的心理需求\n3. 学习快速角色转换的技巧\n4. 记录不同角色下的体验对比',
+                    BR: '1. 理解调皮行为的心理动机\n2. 学习游戏互动的分寸把握\n3. 探索不同方式的趣味表达\n4. 记录调皮互动的效果和反应'
+                };
+                return `<div style="white-space: pre-line;">${paths[dim] || '持续进行自我反思和体验记录，加深对自己的理解。'}</div>`;
+            }
+            
+            function getCommunicationPoints(dim) {
+                const points = {
+                    D: '• 清晰表达您的期望和规则\n• 认真倾听伴侣的需求和边界\n• 定期检查关系的动态平衡\n• 建立明确的安全词系统',
+                    sub: '• 明确表达您的信任需求和边界\n• 学习清晰表达安全词和停止信号\n• 定期反馈您的感受和体验\n• 建立渐进式的信任建立过程',
+                    S: '• 详细沟通疼痛刺激的计划、强度和风险\n• 建立多层次的安全信号系统\n• 活动前后进行充分沟通和善后关怀\n• 持续关注伴侣的身体和心理状态\n• 确保所有活动都在知情同意基础上',
+                    M: '• 清晰表达您的疼痛耐受度、触发点和安全边界\n• 建立不可协商的硬边界和安全词系统\n• 定期反馈疼痛体验和情感状态\n• 学习识别和表达停止信号\n• 确保所有活动都在安全框架内',
+                    SW: '• 提前沟通您的角色灵活性\n• 在关系开始时讨论角色期待\n• 建立角色切换的信号系统\n• 定期检查双方的角色满意度',
+                    BR: '• 确保伴侣理解调皮的意图\n• 建立游戏互动的共同规则\n• 学习识别何时需要严肃沟通\n• 定期检查游戏互动的效果'
+                };
+                return `<div style="white-space: pre-line;">${points[dim] || '保持开放、诚实、尊重的沟通，定期检查关系动态。'}</div>`;
+            }
+            
+            function getBoundaryGuidelines(dim) {
+                const guidelines = {
+                    D: '1. 设立清晰的权力边界和责任范围\n2. 尊重伴侣的硬边界（不可协商的边界）\n3. 建立安全词和紧急停止机制\n4. 定期重新协商规则和协议',
+                    sub: '1. 明确表达您的硬边界和软边界\n2. 学习在需要时坚定维护边界\n3. 建立渐进式的边界探索过程\n4. 定期检查边界的安全性和舒适度',
+                    S: '1. 详细规划疼痛刺激的边界和限制\n2. 建立多层次的停止信号系统\n3. 尊重伴侣的身体和心理限制\n4. 学习识别危险信号和风险',
+                    M: '1. 明确表达您的身体和心理边界\n2. 建立不可逾越的硬边界\n3. 学习识别和表达不适信号\n4. 定期评估耐受度和边界变化',
+                    SW: '1. 明确不同角色的边界要求\n2. 建立角色转换的清晰信号\n3. 尊重不同情境下的角色期待\n4. 定期沟通边界的变化和调整',
+                    BR: '1. 明确游戏互动的边界范围\n2. 建立调皮行为的停止信号\n3. 尊重伴侣的严肃沟通需求\n4. 定期检查游戏规则的适宜性'
+                };
+                return `<div style="white-space: pre-line;">${guidelines[dim] || '设立清晰、明确、可执行的边界，并定期重新评估。'}</div>`;
+            }
+            
+            async function restartTest() {
+                if (state.isProcessing) return;
+                
+                const confirmed = await Toast.show('确定要重新开始测试吗？当前进度将丢失。', true);
+                if (confirmed) {
+                    state.isProcessing = true;
+                    setTimeout(() => {
+                        initializeTest();
+                        state.isProcessing = false;
+                    }, 300);
+                }
+            }
+            
+            function showInfoModal() {
+                if (elements.infoModal) {
+                    elements.infoModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            
+            function hideInfoModal() {
+                if (elements.infoModal) {
+                    elements.infoModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            }
+            
+            function exportResults() {
+                const { scores: rawScores } = calculateScores();
+                const normalizedScores = calculateNormalizedScores(rawScores);
+                const primaryDim = Object.keys(normalizedScores).sort((a, b) => normalizedScores[b] - normalizedScores[a])[0];
+                
+                const exportProfile = getTypeProfile(normalizedScores);
+                const resultText = `
+倾向自评结果
+测试时间: ${new Date().toLocaleString()}
+完成题目: ${state.answeredCount}/${state.questions.length}
+
+总体类型: ${exportProfile.label}
+
+各维度得分:
+${Object.keys(normalizedScores).map(dim => 
+    `${CHINESE_NAMES[dim]}: ${normalizedScores[dim]}分 (${getScoreDescription(normalizedScores[dim])})`
+).join('\n')}
+
+主要倾向: ${CHINESE_NAMES[primaryDim]}
+主要倾向描述: ${getDimensionDetailDescription(primaryDim, normalizedScores[primaryDim])}
+
+重要提醒: 
+1. 此结果仅供参考，实际关系需建立在安全、理智、知情同意的基础上。
+2. 所有活动都应遵循SSC原则（安全、理智、知情同意）。
+3. 请与伴侣充分沟通，建立清晰的边界和安全词系统。
+
+测试完成度: 100%
+结果可靠性: 高
+`;
+                
+                const blob = new Blob([resultText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `倾向测评结果_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // 修复：使用 Toast 替代 alert
+                Toast.show('结果已导出为文本文件。');
+            }
+            
+            function initEventListeners() {
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.choice-btn') && elements.testScene.classList.contains('active')) {
+                        const choiceBtn = e.target.closest('.choice-btn');
+                        if (choiceBtn && choiceBtn.dataset.index !== undefined) {
+                            const choiceIndex = parseInt(choiceBtn.dataset.index);
+                            handleChoice(choiceIndex);
+                        }
+                        return;
+                    }
+                    
+                    if (e.target === elements.infoModal) {
+                        hideInfoModal();
+                        return;
+                    }
+                    
+                    const tabBtn = e.target.closest('.tab-btn');
+                    if (tabBtn) {
+                        const tabId = tabBtn.getAttribute('data-tab');
+                        document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+                        document.querySelectorAll('.tab-content').forEach(function(content) { content.classList.remove('active'); });
+                        tabBtn.classList.add('active');
+                        const tabContent = document.getElementById('tab-' + tabId);
+                        if (tabContent) tabContent.classList.add('active');
+                        return;
+                    }
+                    
+                    const buttonId = e.target.id;
+                    const handlers = {
+                        'startBtn': startFlow,
+                        'restartBtn': restartTest,
+                        'infoBtn': showInfoModal,
+                        'showInfoBtn': showInfoModal,
+                        'closeModalBtn': hideInfoModal,
+                        'prevBtn': goToPreviousQuestion,
+                        'exportBtn': exportResults
+                    };
+                    
+                    if (handlers[buttonId]) {
+                        e.preventDefault();
+                        handlers[buttonId]();
+                    }
+                });
+                
+                // 键盘导航：数字键 1-5 作答，← 翻上一题，→ 翻下一题
+                document.addEventListener('keydown', function(e) {
+                    // 弹层打开时不响应
+                    if (elements.infoModal && elements.infoModal.classList.contains('active')) return;
+                    if (document.getElementById('toastOverlay') &&
+                        document.getElementById('toastOverlay').classList.contains('active')) return;
+                    // 仅作答场景生效
+                    if (!elements.testScene || !elements.testScene.classList.contains('active')) return;
+                    
+                    if (e.key >= '1' && e.key <= '5') {
+                        const q = state.questions[state.currentQuestionIndex];
+                        if (!q || !q.choices) return;
+                        const idx = parseInt(e.key, 10) - 1;
+                        if (idx >= 0 && idx < q.choices.length) {
+                            e.preventDefault();
+                            handleChoice(idx);
+                        }
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        goToPreviousQuestion();
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        if (state.currentQuestionIndex < state.questions.length - 1) {
+                            state.currentQuestionIndex += 1;
+                            renderQuestion();
+                        }
+                    }
+                });
+            }
+            
+            function startFlow() {
+                const gate = document.getElementById('ageGate');
+                if (gate && !gate.checked) {
+                    Toast.show('请先确认您已年满 18 周岁。');
+                    return;
+                }
+                initializeTest();
+            }
+
+            function initApp() {
+                Toast.init(); // ★ 初始化 Toast 组件
+                initElements();
+                initEventListeners();
+                showScene('welcomeScene');
+                
+                if (elements.totalQuestions) {
+                    elements.totalQuestions.textContent = QUESTION_BANK.length;
+                }
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        })();
+    </script>
+</body>
+</html>
